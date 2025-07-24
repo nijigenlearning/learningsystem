@@ -5,8 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Lock, User, Home } from 'lucide-react';
-import Link from 'next/link';
+import { Lock, User } from 'lucide-react';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('admin@example.com');
@@ -44,103 +43,88 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* ログイン画面専用ヘッダー */}
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between h-16 items-center">
-          <span className="text-xl font-bold text-gray-900">学習教材管理システム</span>
-          <Link href="/">
-            <Button variant="outline" size="sm">
-              <Home className="w-4 h-4 mr-2" />
-              ホームに戻る
-            </Button>
-          </Link>
+    <div className="flex min-h-screen items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+      <div className="w-full max-w-md space-y-8">
+        <div>
+          <div className="mx-auto h-12 w-12 flex items-center justify-center rounded-full bg-blue-100">
+            <Lock className="h-6 w-6 text-blue-600" />
+          </div>
+          <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">
+            管理者ログイン
+          </h2>
+          <p className="mt-2 text-center text-sm text-gray-600">
+            学習教材管理システム
+          </p>
         </div>
-      </header>
 
-      <div className="flex min-h-screen items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-        <div className="w-full max-w-md space-y-8">
-          <div>
-            <div className="mx-auto h-12 w-12 flex items-center justify-center rounded-full bg-blue-100">
-              <Lock className="h-6 w-6 text-blue-600" />
-            </div>
-            <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">
-              管理者ログイン
-            </h2>
-            <p className="mt-2 text-center text-sm text-gray-600">
-              学習教材管理システム
+        <div className="bg-white py-8 px-6 shadow rounded-lg">
+          <div className="mb-6">
+            <h3 className="text-lg font-medium text-gray-900">ログイン</h3>
+            <p className="text-sm text-gray-600">
+              管理者アカウントでログインしてください
             </p>
           </div>
 
-          <div className="bg-white py-8 px-6 shadow rounded-lg">
-            <div className="mb-6">
-              <h3 className="text-lg font-medium text-gray-900">ログイン</h3>
-              <p className="text-sm text-gray-600">
-                管理者アカウントでログインしてください
-              </p>
+          <form className="space-y-6" onSubmit={handleSubmit}>
+            {error && (
+              <Alert>
+                <AlertDescription>{error}</AlertDescription>
+              </Alert>
+            )}
+
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-700">
+                メールアドレス
+              </label>
+              <div className="mt-1 relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <User className="h-5 w-5 text-gray-400" />
+                </div>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
             </div>
 
-            <form className="space-y-6" onSubmit={handleSubmit}>
-              {error && (
-                <Alert>
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
-
-              <div>
-                <label htmlFor="email" className="block text-sm font-medium text-gray-700">
-                  メールアドレス
-                </label>
-                <div className="mt-1 relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <User className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <Input
-                    id="email"
-                    name="email"
-                    type="email"
-                    autoComplete="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="pl-10"
-                  />
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                パスワード
+              </label>
+              <div className="mt-1 relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Lock className="h-5 w-5 text-gray-400" />
                 </div>
+                <Input
+                  id="password"
+                  name="password"
+                  type="password"
+                  autoComplete="current-password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="パスワードを入力"
+                  className="pl-10"
+                />
               </div>
+            </div>
 
-              <div>
-                <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                  パスワード
-                </label>
-                <div className="mt-1 relative">
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Lock className="h-5 w-5 text-gray-400" />
-                  </div>
-                  <Input
-                    id="password"
-                    name="password"
-                    type="password"
-                    autoComplete="current-password"
-                    required
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder="パスワードを入力"
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <Button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full"
-                >
-                  {loading ? 'ログイン中...' : 'ログイン'}
-                </Button>
-              </div>
-            </form>
-          </div>
+            <div>
+              <Button
+                type="submit"
+                disabled={loading}
+                className="w-full"
+              >
+                {loading ? 'ログイン中...' : 'ログイン'}
+              </Button>
+            </div>
+          </form>
         </div>
       </div>
     </div>
