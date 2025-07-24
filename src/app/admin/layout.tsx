@@ -1,12 +1,32 @@
+"use client";
+
 import { ReactNode } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import { LogOut } from 'lucide-react';
 
 interface AdminLayoutProps {
   children: ReactNode;
 }
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
+  const handleLogout = async () => {
+    try {
+      const response = await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (response.ok) {
+        window.location.href = '/admin/login';
+      }
+    } catch (error) {
+      console.error('ログアウトエラー:', error);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white shadow-sm border-b">
@@ -23,6 +43,14 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 ホームに戻る
               </Button>
             </Link>
+            <Button 
+              onClick={handleLogout}
+              className="bg-red-200 text-red-800 hover:bg-red-300 border border-red-200" 
+              size="sm"
+            >
+              <LogOut className="w-4 h-4 mr-1" />
+              ログアウト
+            </Button>
           </div>
         </div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 border-b border-gray-200">
