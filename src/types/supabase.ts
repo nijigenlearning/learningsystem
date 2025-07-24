@@ -1,4 +1,4 @@
-export type User = {
+export interface User {
   id: string;
   email: string;
   password: string;
@@ -6,9 +6,9 @@ export type User = {
   role: string;
   created_at: string;
   updated_at: string;
-};
+}
 
-export type Material = {
+export interface Material {
   id: string;
   title: string;
   description?: string;
@@ -35,9 +35,9 @@ export type Material = {
   office?: string;
   created_at: string;
   updated_at: string;
-};
+}
 
-export type RecipeStep = {
+export interface RecipeStep {
   id: string;
   material_id: string;
   step_number: number;
@@ -45,9 +45,9 @@ export type RecipeStep = {
   heading?: string;
   created_at: string;
   updated_at: string;
-};
+}
 
-export type MaterialImage = {
+export interface MaterialImage {
   id: string;
   material_id: string;
   step_id: number;
@@ -58,4 +58,11 @@ export type MaterialImage = {
   order: number;
   created_at: string;
   updated_at: string;
-}; 
+}
+
+export interface Office {
+  id: string;
+  name: string;
+  created_at: string;
+  updated_at: string;
+} 
