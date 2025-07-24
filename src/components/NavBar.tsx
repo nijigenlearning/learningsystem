@@ -2,10 +2,11 @@
 import Link from 'next/link';
 import { supabase } from '@/lib/supabaseClient';
 import { useEffect, useState } from 'react';
+import type { User } from '@supabase/supabase-js';
 
 export default function NavBar() {
   const [isAdmin, setIsAdmin] = useState(false);
-  const [user, setUser] = useState<any>(null);
+  const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
     const checkAdmin = async () => {
