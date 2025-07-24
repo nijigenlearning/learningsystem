@@ -59,7 +59,6 @@ export default function AdminMaterialsPage() {
     return 'todo';
   };
   const getStepColor = (step: number, currentStep: number) => STEP_COLORS[getStepStatus(step, currentStep)];
-  const getHeaderStepColor = getStepColor;
 
   // 事業所選択の処理
   const handleOfficeChange = async (materialId: string, office: string) => {

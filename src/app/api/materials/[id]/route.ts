@@ -19,7 +19,7 @@ export async function GET(
     }
 
     return NextResponse.json(data);
-  } catch (error) {
+  } catch (err) {
     return NextResponse.json({ error: 'サーバーエラーが発生しました' }, { status: 500 });
   }
 }
@@ -61,7 +61,7 @@ export async function PUT(
     }
 
     return NextResponse.json(data);
-  } catch (error) {
+  } catch (err) {
     return NextResponse.json({ error: 'サーバーエラーが発生しました' }, { status: 500 });
   }
 }
@@ -77,7 +77,7 @@ export async function PATCH(
 
     // 事業所の更新のみ許可（認証不要）
     const allowedFields = ['office'];
-    const updateData: any = {};
+    const updateData: Record<string, string> = {};
     
     for (const field of allowedFields) {
       if (body[field] !== undefined) {
@@ -101,7 +101,7 @@ export async function PATCH(
     }
 
     return NextResponse.json(data);
-  } catch (error) {
+  } catch (err) {
     return NextResponse.json({ error: 'サーバーエラーが発生しました' }, { status: 500 });
   }
 }
@@ -140,7 +140,7 @@ export async function DELETE(
     }
 
     return NextResponse.json({ message: '削除されました' });
-  } catch (error) {
+  } catch (err) {
     return NextResponse.json({ error: 'サーバーエラーが発生しました' }, { status: 500 });
   }
 } 

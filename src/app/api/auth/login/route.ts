@@ -11,7 +11,7 @@ export async function POST(req: NextRequest) {
     });
 
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 401 });
+      return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
     const { user } = data;
@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ user });
-  } catch (error) {
+  } catch (err) {
     return NextResponse.json({ error: 'サーバーエラーが発生しました' }, { status: 500 });
   }
 } 

@@ -1,12 +1,11 @@
 "use client";
 import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import { RecipeStep } from '@/types/supabase';
 
 export default function StepsEditPage() {
   const params = useParams();
-  const router = useRouter();
   const materialId = params?.id as string;
   const [steps, setSteps] = useState<RecipeStep[]>([]);
   const [loading, setLoading] = useState(true);
