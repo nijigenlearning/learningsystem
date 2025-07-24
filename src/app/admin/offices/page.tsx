@@ -14,7 +14,7 @@ export default function AdminOfficesPage() {
       setLoading(true);
       const { data, error } = await supabase.from('offices').select('*').order('name');
       if (error) setError(error.message);
-      else setOffices(data);
+      else setOffices(data ?? []);
       setLoading(false);
     };
     fetchOffices();
