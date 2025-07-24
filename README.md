@@ -1,62 +1,80 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 学習教材管理システム
 
-## Getting Started
+学習教材の管理と共有を行うWebアプリケーションです。
 
-First, run the development server:
+## 技術スタック
+
+- **Frontend**: Next.js 15, React 19, TypeScript, Tailwind CSS
+- **Backend**: Next.js API Routes
+- **Database**: Supabase (PostgreSQL)
+- **Authentication**: Supabase Auth
+- **Storage**: Supabase Storage
+- **UI Components**: Radix UI, Lucide React
+- **Deployment**: Vercel
+
+## 機能
+
+- 教材のCRUD操作（作成、読み取り、更新、削除）
+- YouTube動画の登録（URLから自動でタイトル、説明、サムネイルを取得）
+- テキスト編集機能
+- 手順作成機能
+- 画像管理機能
+- 確認・承認フロー
+- 事業所管理
+- ユーザーロール分離（管理者/一般ユーザー）
+
+## セットアップ
+
+### 1. リポジトリのクローン
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone https://github.com/nijigenlearning/learningsystem.git
+cd learningsystem
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### 2. 依存関係のインストール
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm install
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 3. 環境変数の設定
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
-
-### 4. 環境変数の設定
-
-`.env.local`ファイルを作成し、以下の環境変数を設定：
+`.env.local`ファイルを作成し、以下の環境変数を設定してください：
 
 ```env
+# YouTube API Key
+YOUTUBE_API_KEY="your_youtube_api_key"
+
 # Supabase Configuration
-NEXT_PUBLIC_SUPABASE_URL=your_supabase_project_url
+NEXT_PUBLIC_SUPABASE_URL=https://your-project.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 
-# Database URL (Supabase PostgreSQL)
-DATABASE_URL=your_supabase_database_url
+# Supabase PostgreSQL Database URL
+DATABASE_URL="postgresql://postgres:password@db.your-project.supabase.co:5432/postgres"
 
-# JWT Secret (for session management)
+# JWT Secret
 JWT_SECRET=your_jwt_secret
 ```
 
-> **Note:** `.env.local`の雛形ファイルはプロジェクトルートに自動生成されます。
+### 4. データベースのセットアップ
 
-### 5. データベーススキーマの設定
+Supabaseダッシュボードで`supabase/schema.sql`を実行してください。
 
-1. Supabaseダッシュボードで「SQL Editor」を開く
-2. `supabase/schema.sql`の内容をコピーして実行
-3. これにより必要なテーブルとポリシーが作成されます
+### 5. 開発サーバーの起動
 
-> **Note:** `supabase/schema.sql`の雛形ファイルは自動生成されます。
+```bash
+npm run dev
+```
+
+## デプロイ
+
+このプロジェクトはVercelで自動デプロイされます。mainブランチにプッシュすると自動的にデプロイが実行されます。
+
+## 管理者アカウント
+
+初回アクセス時に管理者アカウントを作成してください。
+
+## ライセンス
+
+MIT License
