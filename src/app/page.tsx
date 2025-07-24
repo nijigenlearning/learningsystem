@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { Material } from '@/types/supabase';
+import NavBar from '@/components/NavBar';
 
 export default function HomePage() {
   const [materials, setMaterials] = useState<Material[]>([]);
@@ -27,6 +28,7 @@ export default function HomePage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 py-8">
+        <NavBar />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
@@ -39,6 +41,7 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
+      <NavBar />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
