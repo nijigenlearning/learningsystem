@@ -66,6 +66,46 @@ export async function PUT(
   }
 }
 
+// 教材を部分更新（事業所選択など、一般ユーザーも可能）
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const { id } = await params;
+    const body = await req.json();
+
+    // 事業所の更新のみ許可（認証不要）
+    const allowedFields = ['office'];
+    const updateData: any = {};
+    
+    for (const field of allowedFields) {
+      if (body[field] !== undefined) {
+        updateData[field] = body[field];
+      }
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      return NextResponse.json({ error: '更新可能なフィールドがありません' }, { status: 400 });
+    }
+
+    const { data, error } = await supabase
+      .from('materials')
+      .update(updateData)
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) {
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json(data);
+  } catch (error) {
+    return NextResponse.json({ error: 'サーバーエラーが発生しました' }, { status: 500 });
+  }
+}
+
 // 教材を削除（管理者のみ）
 export async function DELETE(
   req: NextRequest,
