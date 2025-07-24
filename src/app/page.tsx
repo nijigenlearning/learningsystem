@@ -1,3 +1,5 @@
+"use client";
+
 import { supabase } from '@/lib/supabaseClient';
 import { Material } from '@/types/supabase';
 import Image from 'next/image';
