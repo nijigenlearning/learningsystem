@@ -29,7 +29,7 @@ export default function AdminOfficesPage() {
     setNewOffice('');
     // 再取得
     const { data } = await supabase.from('offices').select('*').order('name');
-    setOffices(data);
+    setOffices(data ?? []);
   };
 
   const handleDelete = async (id: string) => {
@@ -38,7 +38,7 @@ export default function AdminOfficesPage() {
     if (error) setError(error.message);
     // 再取得
     const { data } = await supabase.from('offices').select('*').order('name');
-    setOffices(data);
+    setOffices(data ?? []);
   };
 
   if (loading) return <div className="p-8 text-center">読み込み中...</div>;

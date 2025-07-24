@@ -23,7 +23,7 @@ export default function ImagesEditPage() {
         .eq('material_id', materialId)
         .order('order', { ascending: true });
       if (error) setError(error.message);
-      else setImages(data);
+      else setImages(data ?? []);
       setLoading(false);
     };
     if (materialId) fetchImages();
@@ -51,7 +51,7 @@ export default function ImagesEditPage() {
       .select('*')
       .eq('material_id', materialId)
       .order('order', { ascending: true });
-    setImages(data);
+    setImages(data ?? []);
   };
 
   const handleDelete = async (id: string) => {
@@ -64,7 +64,7 @@ export default function ImagesEditPage() {
       .select('*')
       .eq('material_id', materialId)
       .order('order', { ascending: true });
-    setImages(data);
+    setImages(data ?? []);
   };
 
   if (loading) return <div className="p-8 text-center">読み込み中...</div>;

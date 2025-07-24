@@ -23,7 +23,7 @@ export default function StepsEditPage() {
         .eq('material_id', materialId)
         .order('step_number', { ascending: true });
       if (error) setError(error.message);
-      else setSteps(data);
+      else setSteps(data ?? []);
       setLoading(false);
     };
     if (materialId) fetchSteps();
@@ -48,7 +48,7 @@ export default function StepsEditPage() {
       .select('*')
       .eq('material_id', materialId)
       .order('step_number', { ascending: true });
-    setSteps(data);
+    setSteps(data ?? []);
   };
 
   const handleUpdate = async (idx: number, field: 'content' | 'heading', value: string) => {
@@ -62,7 +62,7 @@ export default function StepsEditPage() {
       .select('*')
       .eq('material_id', materialId)
       .order('step_number', { ascending: true });
-    setSteps(data);
+    setSteps(data ?? []);
   };
 
   const handleDelete = async (idx: number) => {
@@ -76,7 +76,7 @@ export default function StepsEditPage() {
       .select('*')
       .eq('material_id', materialId)
       .order('step_number', { ascending: true });
-    setSteps(data);
+    setSteps(data ?? []);
   };
 
   if (loading) return <div className="p-8 text-center">読み込み中...</div>;

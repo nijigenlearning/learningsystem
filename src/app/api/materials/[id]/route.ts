@@ -4,13 +4,14 @@ import { supabase } from '@/lib/supabaseClient';
 // 個別の教材を取得
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const { data, error } = await supabase
       .from('materials')
       .select('*')
-      .eq('id', params.id)
+      .eq('id', id)
       .single();
 
     if (error) {
@@ -26,9 +27,10 @@ export async function GET(
 // 教材を更新（管理者のみ）
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
     const body = await req.json();
 
     // 管理者権限チェック
@@ -50,7 +52,7 @@ export async function PUT(
     const { data, error } = await supabase
       .from('materials')
       .update(body)
-      .eq('id', params.id)
+      .eq('id', id)
       .select()
       .single();
 
@@ -67,9 +69,11 @@ export async function PUT(
 // 教材を削除（管理者のみ）
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
+    const { id } = await params;
+    
     // 管理者権限チェック
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) {
@@ -89,7 +93,7 @@ export async function DELETE(
     const { error } = await supabase
       .from('materials')
       .delete()
-      .eq('id', params.id);
+      .eq('id', id);
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
