@@ -5,7 +5,6 @@ import {
   BookOpen, 
   Building2, 
   LogOut, 
-  Plus,
   Settings,
   Users
 } from 'lucide-react';
