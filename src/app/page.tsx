@@ -44,9 +44,17 @@ export default function HomePage() {
           <h1 className="text-4xl font-bold text-gray-900 mb-4">
             学習教材管理システム
           </h1>
-          <p className="text-lg text-gray-600">
+          <p className="text-lg text-gray-600 mb-6">
             教材の管理と共有を行うWebアプリケーション
           </p>
+          <div className="flex justify-center gap-4">
+            <Link
+              href="/admin/login"
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            >
+              管理者ログイン
+            </Link>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
