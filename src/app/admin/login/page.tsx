@@ -4,20 +4,20 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Lock, User } from 'lucide-react';
+import { Lock, User, Home } from 'lucide-react';
+import Link from 'next/link';
 
-export default function AdminLoginPage() {
-  const [email, setEmail] = useState('');
+export default function LoginPage() {
+  const [email, setEmail] = useState('admin@example.com');
   const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
+    setLoading(true);
     setError('');
 
     try {
@@ -32,53 +32,69 @@ export default function AdminLoginPage() {
       const data = await response.json();
 
       if (response.ok) {
-        // ログイン成功
         router.push('/admin/materials');
       } else {
         setError(data.error || 'ログインに失敗しました');
       }
-    } catch {
+    } catch (err) {
       setError('ログイン中にエラーが発生しました');
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8">
-        <div>
-          <div className="mx-auto h-12 w-12 flex items-center justify-center rounded-full bg-blue-100">
-            <Lock className="h-6 w-6 text-blue-600" />
-          </div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            管理者ログイン
-          </h2>
-          <p className="mt-2 text-center text-sm text-gray-600">
-            学習教材管理システム
-          </p>
+    <div className="min-h-screen bg-gray-50">
+      {/* ログイン画面専用ヘッダー */}
+      <header className="bg-white shadow-sm border-b">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between h-16 items-center">
+          <span className="text-xl font-bold text-gray-900">学習教材管理システム</span>
+          <Link href="/">
+            <Button variant="outline" size="sm">
+              <Home className="w-4 h-4 mr-2" />
+              ホームに戻る
+            </Button>
+          </Link>
         </div>
-        
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-center">ログイン</CardTitle>
-            <CardDescription className="text-center">
-              管理者アカウントでログインしてください
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-6">
+      </header>
+
+      <div className="flex min-h-screen items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <div className="w-full max-w-md space-y-8">
+          <div>
+            <div className="mx-auto h-12 w-12 flex items-center justify-center rounded-full bg-blue-100">
+              <Lock className="h-6 w-6 text-blue-600" />
+            </div>
+            <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">
+              管理者ログイン
+            </h2>
+            <p className="mt-2 text-center text-sm text-gray-600">
+              学習教材管理システム
+            </p>
+          </div>
+
+          <div className="bg-white py-8 px-6 shadow rounded-lg">
+            <div className="mb-6">
+              <h3 className="text-lg font-medium text-gray-900">ログイン</h3>
+              <p className="text-sm text-gray-600">
+                管理者アカウントでログインしてください
+              </p>
+            </div>
+
+            <form className="space-y-6" onSubmit={handleSubmit}>
               {error && (
-                <Alert variant="destructive">
+                <Alert>
                   <AlertDescription>{error}</AlertDescription>
                 </Alert>
               )}
-              
+
               <div>
                 <label htmlFor="email" className="block text-sm font-medium text-gray-700">
                   メールアドレス
                 </label>
                 <div className="mt-1 relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <User className="h-5 w-5 text-gray-400" />
+                  </div>
                   <Input
                     id="email"
                     name="email"
@@ -87,12 +103,8 @@ export default function AdminLoginPage() {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="admin@example.com"
                     className="pl-10"
                   />
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <User className="h-5 w-5 text-gray-400" />
-                  </div>
                 </div>
               </div>
 
@@ -101,6 +113,9 @@ export default function AdminLoginPage() {
                   パスワード
                 </label>
                 <div className="mt-1 relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <Lock className="h-5 w-5 text-gray-400" />
+                  </div>
                   <Input
                     id="password"
                     name="password"
@@ -112,24 +127,21 @@ export default function AdminLoginPage() {
                     placeholder="パスワードを入力"
                     className="pl-10"
                   />
-                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <Lock className="h-5 w-5 text-gray-400" />
-                  </div>
                 </div>
               </div>
 
               <div>
                 <Button
                   type="submit"
-                  disabled={isLoading}
+                  disabled={loading}
                   className="w-full"
                 >
-                  {isLoading ? 'ログイン中...' : 'ログイン'}
+                  {loading ? 'ログイン中...' : 'ログイン'}
                 </Button>
               </div>
             </form>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
     </div>
   );
