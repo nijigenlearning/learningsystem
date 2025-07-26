@@ -12,6 +12,8 @@ export default function MaterialTextPage({ params }: { params: Promise<{ id: str
   const router = useRouter();
   const [material, setMaterial] = useState<Material | null>(null);
   const [text, setText] = useState('');
+  const [instruction, setInstruction] = useState('');
+  const [note, setNote] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
@@ -25,7 +27,10 @@ export default function MaterialTextPage({ params }: { params: Promise<{ id: str
         if (response.ok) {
           const data = await response.json();
           setMaterial(data);
-          setText(data.video_description || '');
+          // 初期値は空欄にする（既存データがある場合は読み込む）
+          setText(data.transcript || '');
+          setInstruction(data.instruction || '');
+          setNote(data.note || '');
         } else {
           setError('教材の取得に失敗しました');
         }
@@ -53,8 +58,10 @@ export default function MaterialTextPage({ params }: { params: Promise<{ id: str
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          video_description: text,
-          text_registration: status
+          text_registration: status, // text_registrationフィールドに状態を保存
+          transcript: text, // transcriptフィールドにテキスト内容を保存
+          instruction: instruction,
+          note: note
         }),
       });
 
@@ -143,6 +150,34 @@ export default function MaterialTextPage({ params }: { params: Promise<{ id: str
             <p className="text-xs text-gray-500 mt-1">
               教材の詳細な説明や手順を記入してください
             </p>
+          </div>
+
+          {/* 作成指示 */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              作成指示
+            </label>
+            <Textarea
+              value={instruction}
+              onChange={(e) => setInstruction(e.target.value)}
+              placeholder="教材作成の指示を入力"
+              rows={3}
+              className="w-full"
+            />
+          </div>
+
+          {/* 備考 */}
+          <div className="mb-6">
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              備考
+            </label>
+            <Textarea
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="備考を入力"
+              rows={3}
+              className="w-full"
+            />
           </div>
 
           {/* アクションボタン */}

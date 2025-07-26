@@ -65,13 +65,13 @@ export default function HomePage() {
   const STEP_COLORS = {
     done: 'bg-green-200 text-green-900',
     current: 'bg-blue-200 text-blue-900',
-    todo: 'bg-gray-200 text-gray-600',
+    todo: 'bg-gray-200 text-gray-600 border border-gray-400',
   };
   const getStepColor = (material: Material, step: number) => {
     const status = getStepStatus(material, step);
     if (status === 'completed') return STEP_COLORS.done;
-    if (status === 'pending') return STEP_COLORS.todo;
-    return STEP_COLORS.current; // 'draft' の場合
+    if (status === 'draft') return STEP_COLORS.current; // draftの場合は青色（現在の工程）
+    return STEP_COLORS.todo; // pendingの場合は未着手
   };
 
   // 工程クリック時の処理
