@@ -4,12 +4,16 @@ import { ReactNode } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { LogOut } from 'lucide-react';
+import { usePathname } from 'next/navigation';
 
 interface AdminLayoutProps {
   children: ReactNode;
 }
 
 export default function AdminLayout({ children }: AdminLayoutProps) {
+  const pathname = usePathname();
+  const isLoginPage = pathname === '/admin/login';
+
   const handleLogout = async () => {
     try {
       const response = await fetch('/api/auth/logout', {
@@ -29,7 +33,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm border-b">
+      {!isLoginPage && (
+        <header className="bg-white shadow-sm border-b">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between h-16 items-center">
           <span className="text-xl font-bold text-gray-900">学習教材管理システム</span>
           <div className="flex gap-2">
@@ -96,8 +101,9 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             </div>
           </div>
         </div>
-      </header>
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
+        </header>
+      )}
+      <main className={isLoginPage ? "" : "max-w-7xl mx-auto py-6 sm:px-6 lg:px-8"}>
         {children}
       </main>
     </div>
