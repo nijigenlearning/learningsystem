@@ -2,10 +2,12 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Material } from '@/types/supabase';
 import { Button } from '@/components/ui/button';
 
 export default function HomePage() {
+  const router = useRouter();
   const [materials, setMaterials] = useState<Material[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -39,12 +41,24 @@ export default function HomePage() {
   const getStepName = (step: number) => {
     const stepNames = {
       1: '動画登録',
-      2: 'テキスト編集',
+      2: 'テキスト登録',
       3: '手順作成',
       4: '画像登録',
       5: '確認・承認'
     };
     return stepNames[step as keyof typeof stepNames] || '';
+  };
+
+  // 工程の状態を取得
+  const getStepStatus = (material: Material, step: number) => {
+    const stepFields = {
+      1: material.video_registration,
+      2: material.text_registration,
+      3: material.text_revision,
+      4: material.image_registration,
+      5: material.confirmation
+    };
+    return stepFields[step as keyof typeof stepFields] || 'pending';
   };
 
   // 色分岐関数
@@ -53,12 +67,39 @@ export default function HomePage() {
     current: 'bg-blue-200 text-blue-900',
     todo: 'bg-gray-200 text-gray-600',
   };
-  const getStepStatus = (step: number, currentStep: number) => {
-    if (step < currentStep) return 'done';
-    if (step === currentStep) return 'current';
-    return 'todo';
+  const getStepColor = (material: Material, step: number) => {
+    const status = getStepStatus(material, step);
+    if (status === 'completed') return STEP_COLORS.done;
+    if (status === 'pending') return STEP_COLORS.todo;
+    return STEP_COLORS.current; // 'draft' の場合
   };
-  const getStepColor = (step: number, currentStep: number) => STEP_COLORS[getStepStatus(step, currentStep)];
+
+  // 工程クリック時の処理
+  const handleStepClick = (material: Material, step: number) => {
+    const status = getStepStatus(material, step);
+    
+    // 完了済みの場合は編集ボタンを表示するため、何もしない
+    if (status === 'completed') return;
+    
+    // 各工程の編集画面に遷移
+    switch (step) {
+      case 1:
+        router.push(`/admin/materials/${material.id}/edit`);
+        break;
+      case 2:
+        router.push(`/materials/${material.id}/text`);
+        break;
+      case 3:
+        router.push(`/materials/${material.id}/steps`);
+        break;
+      case 4:
+        router.push(`/materials/${material.id}/images`);
+        break;
+      case 5:
+        router.push(`/materials/${material.id}/confirm`);
+        break;
+    }
+  };
 
   // 事業所選択の処理
   const handleOfficeChange = async (materialId: string, office: string) => {
@@ -111,7 +152,7 @@ export default function HomePage() {
               <span className="text-lg font-semibold text-gray-700">工程:</span>
               <div className="flex space-x-2">
                 <span className="border border-gray-300 text-gray-700 px-2 py-1 rounded">①動画登録</span>
-                <span className="border border-gray-300 text-gray-700 px-2 py-1 rounded">②テキスト編集</span>
+                <span className="border border-gray-300 text-gray-700 px-2 py-1 rounded">②テキスト登録</span>
                 <span className="border border-gray-300 text-gray-700 px-2 py-1 rounded">③手順作成</span>
                 <span className="border border-gray-300 text-gray-700 px-2 py-1 rounded">④画像登録</span>
                 <span className="border border-gray-300 text-gray-700 px-2 py-1 rounded">⑤確認・承認</span>
@@ -173,16 +214,33 @@ export default function HomePage() {
                       {/* タイトル削除済み */}
                     </div>
                     <div className="flex gap-2 w-full justify-between">
-                      {[1, 2, 3, 4, 5].map((step) => (
-                        <div
-                          key={step}
-                          className={`flex-1 h-10 rounded-full flex items-center justify-center text-base font-bold mx-1 ${getStepColor(step, currentStep)}`}
-                          title={`${step}. ${getStepName(step)}`}
-                          style={{ minWidth: 0 }}
-                        >
-                          {step}
-                        </div>
-                      ))}
+                      {[1, 2, 3, 4, 5].map((step) => {
+                        const status = getStepStatus(material, step);
+                        const isCompleted = status === 'completed';
+                        
+                        return (
+                          <div key={step} className="flex-1 relative">
+                            <button
+                              onClick={() => handleStepClick(material, step)}
+                              className={`w-full h-10 rounded-full flex items-center justify-center text-base font-bold mx-1 transition-colors ${getStepColor(material, step)} ${!isCompleted ? 'hover:opacity-80 cursor-pointer' : 'cursor-default'}`}
+                              title={`${step}. ${getStepName(step)}`}
+                              style={{ minWidth: 0 }}
+                              disabled={isCompleted}
+                            >
+                              {step}
+                            </button>
+                            {isCompleted && (
+                              <button
+                                onClick={() => handleStepClick(material, step)}
+                                className="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 text-white text-xs rounded-full flex items-center justify-center hover:bg-blue-600"
+                                title="編集"
+                              >
+                                ✏️
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
 
