@@ -69,8 +69,14 @@ export default function HomePage() {
   };
   const getStepColor = (material: Material, step: number) => {
     const status = getStepStatus(material, step);
+    const currentStep = getCurrentStep(material);
+    
+    // デバッグ用ログ
+    console.log(`Material: ${material.title}, Step: ${step}, Status: ${status}, CurrentStep: ${currentStep}`);
+    
     if (status === 'completed') return STEP_COLORS.done;
     if (status === 'draft') return STEP_COLORS.current; // draftの場合は青色（現在の工程）
+    if (step === currentStep && status === 'pending') return STEP_COLORS.current; // 現在の工程でpendingの場合は青色
     return STEP_COLORS.todo; // pendingの場合は未着手
   };
 
