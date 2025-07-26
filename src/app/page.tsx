@@ -66,13 +66,34 @@ export default function HomePage() {
     done: 'bg-green-200 text-green-900',
     current: 'bg-blue-200 text-blue-900',
     todo: 'bg-gray-200 text-gray-600 border border-gray-400',
+    disabled: 'bg-gray-100 text-gray-400 border border-gray-300',
   };
+  
+  // 工程にアクセス可能かチェック
+  const canAccessStep = (material: Material, targetStep: number) => {
+    if (targetStep === 1) return true; // 工程1は常にアクセス可能
+    
+    // 前の工程が完了しているかチェック
+    for (let i = 1; i < targetStep; i++) {
+      const prevStepStatus = getStepStatus(material, i);
+      if (prevStepStatus !== 'completed') {
+        return false;
+      }
+    }
+    return true;
+  };
+  
   const getStepColor = (material: Material, step: number) => {
     const status = getStepStatus(material, step);
     const currentStep = getCurrentStep(material);
     
     // デバッグ用ログ
     console.log(`Material: ${material.title}, Step: ${step}, Status: ${status}, CurrentStep: ${currentStep}`);
+    
+    // アクセスできない工程は無効化
+    if (!canAccessStep(material, step) && status === 'pending') {
+      return STEP_COLORS.disabled;
+    }
     
     if (status === 'completed') return STEP_COLORS.done;
     if (status === 'draft') return STEP_COLORS.current; // draftの場合は青色（現在の工程）
@@ -87,7 +108,48 @@ export default function HomePage() {
     // 完了済みの場合は編集ボタンを表示するため、何もしない
     if (status === 'completed') return;
     
+    // 前の工程が完了しているかチェック
+    const canAccessStep = (targetStep: number) => {
+      if (targetStep === 1) return true; // 工程1は常にアクセス可能
+      
+      // 前の工程が完了しているかチェック
+      for (let i = 1; i < targetStep; i++) {
+        const prevStepStatus = getStepStatus(material, i);
+        if (prevStepStatus !== 'completed') {
+          return false;
+        }
+      }
+      return true;
+    };
+    
+    // アクセス可能かチェック
+    if (!canAccessStep(step)) {
+      alert('前の工程を完了してから進めてください。');
+      return;
+    }
+    
     // 各工程の編集画面に遷移
+    switch (step) {
+      case 1:
+        router.push(`/admin/materials/${material.id}/edit`);
+        break;
+      case 2:
+        router.push(`/materials/${material.id}/text`);
+        break;
+      case 3:
+        router.push(`/materials/${material.id}/steps`);
+        break;
+      case 4:
+        router.push(`/materials/${material.id}/images`);
+        break;
+      case 5:
+        router.push(`/materials/${material.id}/confirm`);
+        break;
+    }
+  };
+
+  // 編集ボタン用：必ず編集画面に遷移
+  const handleEditStepClick = (material: Material, step: number) => {
     switch (step) {
       case 1:
         router.push(`/admin/materials/${material.id}/edit`);
@@ -224,28 +286,31 @@ export default function HomePage() {
                         const status = getStepStatus(material, step);
                         const isCompleted = status === 'completed';
                         
-                        return (
-                          <div key={step} className="flex-1 relative">
-                            <button
-                              onClick={() => handleStepClick(material, step)}
-                              className={`w-full h-10 rounded-full flex items-center justify-center text-base font-bold mx-1 transition-colors ${getStepColor(material, step)} ${!isCompleted ? 'hover:opacity-80 cursor-pointer' : 'cursor-default'}`}
-                              title={`${step}. ${getStepName(step)}`}
-                              style={{ minWidth: 0 }}
-                              disabled={isCompleted}
-                            >
-                              {step}
-                            </button>
-                            {isCompleted && (
-                              <button
-                                onClick={() => handleStepClick(material, step)}
-                                className="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 text-white text-xs rounded-full flex items-center justify-center hover:bg-blue-600"
-                                title="編集"
-                              >
-                                ✏️
-                              </button>
-                            )}
-                          </div>
-                        );
+                                                 const canAccess = canAccessStep(material, step);
+                         const isDisabled = isCompleted || !canAccess;
+                         
+                         return (
+                           <div key={step} className="flex-1 relative">
+                             <button
+                               onClick={() => handleStepClick(material, step)}
+                               className={`w-full h-10 rounded-full flex items-center justify-center text-base font-bold mx-1 transition-colors ${getStepColor(material, step)} ${!isDisabled ? 'hover:opacity-80 cursor-pointer' : 'cursor-not-allowed'}`}
+                               title={`${step}. ${getStepName(step)}`}
+                               style={{ minWidth: 0 }}
+                               disabled={isDisabled}
+                             >
+                               {step}
+                             </button>
+                             {isCompleted && (
+                               <button
+                                 onClick={() => handleEditStepClick(material, step)}
+                                 className="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 text-white text-xs rounded-full flex items-center justify-center hover:bg-blue-600"
+                                 title="編集"
+                               >
+                                 ✏️
+                               </button>
+                             )}
+                           </div>
+                         );
                       })}
                     </div>
                   </div>
