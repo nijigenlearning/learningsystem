@@ -22,7 +22,7 @@ export async function GET() {
 // 新しい教材を作成（管理者のみ）
 export async function POST(req: NextRequest) {
   try {
-    const { title, description, youtube_url } = await req.json();
+    const { title, description, youtube_url, thumbnail, software, version } = await req.json();
 
     // 管理者権限チェック
     const authHeader = req.headers.get('authorization');
@@ -59,7 +59,15 @@ export async function POST(req: NextRequest) {
           title,
           description,
           youtube_url,
-          youtube_id
+          youtube_id,
+          thumbnail,
+          software,
+          version,
+          video_registration: 'completed', // STEP1完了
+          text_registration: 'pending',    // STEP2未着手
+          text_revision: 'pending',        // STEP3未着手
+          image_registration: 'pending',   // STEP4未着手
+          confirmation: 'pending'          // STEP5未着手
         }
       ])
       .select()
