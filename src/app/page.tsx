@@ -160,10 +160,12 @@ export default function HomePage() {
                 )}
 
                 <div className="p-6">
-                  {/* タイトル */}
-                  <h3 className="text-xl font-semibold text-gray-900 mb-4">
-                    {material.title}
-                  </h3>
+                  {/* タイトル - 固定高さで統一 */}
+                  <div className="h-16 mb-4 flex items-start">
+                    <h3 className="text-lg font-semibold text-gray-900 line-clamp-2 leading-tight">
+                      {material.title}
+                    </h3>
+                  </div>
 
                   {/* 工程の進捗表示 */}
                   <div className="mb-4">
