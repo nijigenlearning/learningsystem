@@ -11,6 +11,7 @@ import { Loader2, Youtube } from 'lucide-react';
 export default function MaterialNewPage() {
   const router = useRouter();
   const [title, setTitle] = useState('');
+  const [videoTitle, setVideoTitle] = useState(''); // YouTube APIから取得したタイトル
   const [description, setDescription] = useState('');
   const [youtubeUrl, setYoutubeUrl] = useState('');
   const [lastFetchedUrl, setLastFetchedUrl] = useState('');
@@ -79,7 +80,8 @@ export default function MaterialNewPage() {
       const data = await response.json();
 
       if (response.ok) {
-        setTitle(data.title || '');
+        setVideoTitle(data.title || ''); // YouTube APIから取得したタイトルをvideo_titleに保存
+        setTitle(data.title || ''); // 初期値としてYouTubeタイトルを設定
         setDescription(data.description || '');
         setThumbnail(data.thumbnail || '');
         setLastFetchedUrl(url);
@@ -121,6 +123,7 @@ export default function MaterialNewPage() {
         },
         body: JSON.stringify({ 
           title, 
+          video_title: videoTitle, // YouTube APIから取得したタイトル
           description, 
           youtube_url: youtubeUrl, 
           thumbnail,
@@ -219,7 +222,7 @@ export default function MaterialNewPage() {
                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
              <div>
                <label className="block text-sm font-medium text-gray-700 mb-2">
-                 タイトル *
+                 教材タイトル *
                </label>
                <Input
                  type="text"
@@ -228,6 +231,11 @@ export default function MaterialNewPage() {
                  required
                  placeholder="教材のタイトルを入力"
                />
+               {videoTitle && (
+                 <p className="text-xs text-gray-500 mt-1">
+                   参考: YouTube動画タイトル「{videoTitle}」
+                 </p>
+               )}
              </div>
 
              <div>

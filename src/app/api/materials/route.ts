@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     console.log('リクエストボディ:', body);
     
-    const { title, description, youtube_url, thumbnail, software, instruction, note, office } = body;
+    const { title, video_title, description, youtube_url, thumbnail, software, instruction, note, office } = body;
     
     // descriptionカラムが存在しないため、video_descriptionとして保存
     const video_description = description;
@@ -66,6 +66,7 @@ export async function POST(req: NextRequest) {
 
     console.log('Supabaseに挿入するデータ:', {
       title,
+      video_title,
       video_description,
       youtube_url,
       youtube_id,
@@ -86,6 +87,7 @@ export async function POST(req: NextRequest) {
       .insert([
         {
           title,
+          video_title,
           video_description,
           youtube_url,
           youtube_id,
