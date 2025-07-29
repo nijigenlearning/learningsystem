@@ -286,7 +286,6 @@ export default function ImagesEditPage() {
             console.error('Supabase Storage アップロードエラー詳細:', {
               error: uploadError,
               message: uploadError.message,
-              hint: uploadError.hint,
               code: uploadError.code
             });
             
@@ -386,7 +385,6 @@ export default function ImagesEditPage() {
         console.error('Supabase Storage アップロードエラー詳細:', {
           error: uploadError,
           message: uploadError.message,
-          hint: uploadError.hint,
           code: uploadError.code
         });
         
@@ -618,24 +616,6 @@ export default function ImagesEditPage() {
     } catch (err) {
       console.error('完成見本画像アップロードエラー詳細:', err);
       setError('完成見本画像のアップロードに失敗しました');
-    }
-  };
-
-  const handleSampleImageSave = async () => {
-    try {
-      const { error } = await supabase
-        .from('materials')
-        .update({ sample_image_url: sampleImageUrl })
-        .eq('id', materialId);
-
-      if (error) {
-        setError('完成見本画像の保存に失敗しました');
-        return;
-      }
-
-      setSuccess('完成見本画像が保存されました');
-    } catch {
-      setError('完成見本画像の保存に失敗しました');
     }
   };
 
