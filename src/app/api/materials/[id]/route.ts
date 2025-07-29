@@ -76,7 +76,7 @@ export async function PATCH(
     const body = await req.json();
 
     // 事業所とテキスト登録の更新を許可（認証不要）
-    const allowedFields = ['office', 'video_description', 'text_registration', 'transcript', 'instruction', 'note', 'recipe_steps', 'text_revision'];
+    const allowedFields = ['office', 'video_description', 'text_registration', 'transcript', 'instruction', 'note', 'recipe_steps', 'text_revision', 'image_registration'];
     const updateData: Record<string, unknown> = {};
     
     for (const field of allowedFields) {
