@@ -244,10 +244,22 @@ export default function ImagesEditPage() {
         fileType: file.type
       });
 
+      // 環境変数の確認
+      console.log('環境変数確認:', {
+        hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+        hasSupabaseAnonKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
+        supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL
+      });
+
       // Supabase Storageバケットの存在確認
       try {
+        console.log('Supabaseクライアント設定確認:', {
+          url: supabase.supabaseUrl,
+          hasAnonKey: !!supabase.supabaseKey
+        });
+        
         const { data: bucketList, error: bucketError } = await supabase.storage.listBuckets();
-        console.log('利用可能なバケット一覧:', bucketList);
+        console.log('バケット一覧取得結果:', { bucketList, bucketError });
         
         if (bucketError) {
           console.error('バケット一覧取得エラー:', bucketError);
