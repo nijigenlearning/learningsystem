@@ -285,8 +285,7 @@ export default function ImagesEditPage() {
           if (uploadError) {
             console.error('Supabase Storage アップロードエラー詳細:', {
               error: uploadError,
-              message: uploadError.message,
-              code: uploadError.code
+              message: uploadError.message
             });
             
             setError(`画像のアップロードに失敗しました: ${uploadError.message || '不明なエラー'}`);
@@ -384,8 +383,7 @@ export default function ImagesEditPage() {
       if (uploadError) {
         console.error('Supabase Storage アップロードエラー詳細:', {
           error: uploadError,
-          message: uploadError.message,
-          code: uploadError.code
+          message: uploadError.message
         });
         
         // エラーの種類に応じてメッセージを変更
