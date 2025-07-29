@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect, useCallback } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import { Material, RecipeStep, MaterialImage } from '@/types/supabase';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, X, Maximize2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, Maximize2, Check } from 'lucide-react';
 
 interface StepWithImages {
   step: RecipeStep;
@@ -14,6 +14,7 @@ interface StepWithImages {
 
 export default function MaterialViewPage() {
   const params = useParams();
+  const router = useRouter();
   const materialId = params?.id as string;
   const [material, setMaterial] = useState<Material | null>(null);
   const [steps, setSteps] = useState<RecipeStep[]>([]);
@@ -151,6 +152,11 @@ export default function MaterialViewPage() {
   const closeModal = () => {
     setShowModal(false);
     setSelectedStepIndex(null);
+  };
+
+  const handleComplete = () => {
+    // 工程5を完了としてマーク
+    router.push('/admin/materials');
   };
 
   const nextStep = () => {
@@ -498,6 +504,17 @@ export default function MaterialViewPage() {
             </div>
           </div>
         )}
+        
+        {/* 工程完了ボタン */}
+        <div className="mt-8 flex justify-center">
+          <Button
+            onClick={handleComplete}
+            className="flex items-center gap-2 px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg shadow-lg transition-colors"
+          >
+            <Check className="w-5 h-5" />
+            工程完了
+          </Button>
+        </div>
       </div>
     </div>
   );
