@@ -200,7 +200,7 @@ export default function AdminMaterialsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen bg-white py-8">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
@@ -212,32 +212,7 @@ export default function AdminMaterialsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <header className="bg-white shadow-sm border-b">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 border-b border-gray-200">
-          <div className="flex items-center space-x-8">
-            <div className="flex items-center space-x-4">
-              <span className="text-lg font-semibold text-gray-700">工程:</span>
-              <div className="flex space-x-2">
-                <span className="border border-gray-300 text-gray-700 px-2 py-1 rounded">①動画登録</span>
-                <span className="border border-gray-300 text-gray-700 px-2 py-1 rounded">②テキスト登録</span>
-                <span className="border border-gray-300 text-gray-700 px-2 py-1 rounded">③手順作成</span>
-                <span className="border border-gray-300 text-gray-700 px-2 py-1 rounded">④画像登録</span>
-                <span className="border border-gray-300 text-gray-700 px-2 py-1 rounded">⑤確認・承認</span>
-              </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              <span className="text-lg font-semibold text-gray-700">状態:</span>
-              <div className="flex space-x-2">
-                <span className="bg-green-200 text-green-900 px-2 py-1 rounded">完了</span>
-                <span className="bg-blue-200 text-blue-900 px-2 py-1 rounded">現在の工程</span>
-                <span className="bg-gray-200 text-gray-600 px-2 py-1 rounded">未着手</span>
-                <span className="bg-yellow-200 text-yellow-900 px-2 py-1 rounded">一時保存</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </header>
+    <div className="min-h-screen bg-white">
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {materials.map((material) => {

@@ -50,8 +50,11 @@ export default function ConfirmPage() {
   if (!material) return <div className="p-8 text-center text-red-600">教材が見つかりません</div>;
 
   return (
-    <main className="max-w-xl mx-auto p-4">
-      <h1 className="text-xl font-bold mb-6">確認・承認（STEP5）</h1>
+    <div className="min-h-screen bg-white">
+      <div className="max-w-xl mx-auto p-6">
+        <div className="mb-8">
+          <p className="text-gray-600">教材の確認・承認を行います</p>
+        </div>
       <div className="mb-4">現在の承認状態：
         <span className="ml-2 font-semibold">
           {material.confirmation === 'approved' ? '承認済み' : material.confirmation === 'rejected' ? '差し戻し' : '未承認'}
@@ -83,6 +86,7 @@ export default function ConfirmPage() {
         <div className="font-semibold mt-4 mb-2">説明</div>
         <div>{material.description}</div>
       </div>
-    </main>
+      </div>
+    </div>
   );
 } 

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '@/lib/supabaseClient';
+import { supabase, supabaseAdmin } from '@/lib/supabaseClient';
 
 // 個別の教材を取得
 export async function GET(
@@ -76,8 +76,8 @@ export async function PATCH(
     const body = await req.json();
 
     // 事業所とテキスト登録の更新を許可（認証不要）
-    const allowedFields = ['office', 'video_description', 'text_registration', 'transcript', 'instruction', 'note'];
-    const updateData: Record<string, string> = {};
+    const allowedFields = ['office', 'video_description', 'text_registration', 'transcript', 'instruction', 'note', 'recipe_steps', 'text_revision'];
+    const updateData: Record<string, any> = {};
     
     for (const field of allowedFields) {
       if (body[field] !== undefined) {
@@ -89,7 +89,7 @@ export async function PATCH(
       return NextResponse.json({ error: '更新可能なフィールドがありません' }, { status: 400 });
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
       .from('materials')
       .update(updateData)
       .eq('id', id)

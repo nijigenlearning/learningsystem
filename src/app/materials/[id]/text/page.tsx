@@ -6,7 +6,7 @@ import { Material } from '@/types/supabase';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Save, ArrowLeft } from 'lucide-react';
+import { Loader2, Save } from 'lucide-react';
 
 export default function MaterialTextPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
@@ -83,7 +83,7 @@ export default function MaterialTextPage({ params }: { params: Promise<{ id: str
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
           <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" />
           <p className="text-gray-600">読み込み中...</p>
@@ -94,7 +94,7 @@ export default function MaterialTextPage({ params }: { params: Promise<{ id: str
 
   if (!material) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-600">教材が見つかりません</p>
         </div>
@@ -103,21 +103,10 @@ export default function MaterialTextPage({ params }: { params: Promise<{ id: str
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
       <div className="max-w-4xl mx-auto p-6">
         {/* ヘッダー */}
         <div className="mb-8">
-          <div className="flex items-center gap-4 mb-4">
-            <Button
-              variant="outline"
-              onClick={() => router.back()}
-              className="flex items-center gap-2"
-            >
-              <ArrowLeft className="w-4 h-4" />
-              戻る
-            </Button>
-            <h1 className="text-2xl font-bold text-gray-900">テキスト登録</h1>
-          </div>
           <p className="text-gray-600">教材「{material.title}」のテキスト内容を編集します</p>
         </div>
 

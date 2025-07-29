@@ -70,8 +70,11 @@ export default function ImagesEditPage() {
   if (loading) return <div className="p-8 text-center">読み込み中...</div>;
 
   return (
-    <main className="max-w-2xl mx-auto p-4">
-      <h1 className="text-xl font-bold mb-6">画像登録（STEP4）</h1>
+    <div className="min-h-screen bg-white">
+      <div className="max-w-2xl mx-auto p-6">
+        <div className="mb-8">
+          <p className="text-gray-600">教材の画像を登録します</p>
+        </div>
       <form onSubmit={handleAdd} className="mb-6 flex gap-2 items-end">
         <div className="flex-1">
           <label className="block text-sm font-medium">画像URL</label>
@@ -100,6 +103,7 @@ export default function ImagesEditPage() {
           </li>
         ))}
       </ul>
-    </main>
+      </div>
+    </div>
   );
 } 

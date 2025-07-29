@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Save, ArrowLeft, Trash2 } from 'lucide-react';
+import { Loader2, Save, Trash2 } from 'lucide-react';
 
 export default function MaterialEditPage() {
   const router = useRouter();
@@ -199,7 +199,7 @@ export default function MaterialEditPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen bg-white py-8">
         <div className="max-w-4xl mx-auto p-6">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
@@ -212,7 +212,7 @@ export default function MaterialEditPage() {
 
   if (!material) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen bg-white py-8">
         <div className="max-w-4xl mx-auto p-6">
           <div className="text-center text-red-600">
             <p>教材が見つかりません</p>
@@ -224,16 +224,10 @@ export default function MaterialEditPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-white">
       <div className="max-w-4xl mx-auto p-6">
         {/* ヘッダー */}
         <div className="mb-8">
-          <div className="flex items-center gap-4 mb-4">
-            <Button variant="outline" onClick={() => router.back()} className="flex items-center gap-2">
-              <ArrowLeft className="w-4 h-4" />戻る
-            </Button>
-            <h1 className="text-2xl font-bold text-gray-900">教材編集</h1>
-          </div>
           <p className="text-gray-600">教材「{material.title}」の情報を編集します</p>
         </div>
 
