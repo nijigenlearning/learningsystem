@@ -266,7 +266,82 @@ export default function ImagesEditPage() {
         
         if (!bucketList || bucketList.length === 0) {
           console.warn('バケットが存在しません');
-          setError('ストレージバケットが設定されていません。管理者に連絡してください。');
+          console.log('利用可能なバケット名:', bucketList.map(b => b.name));
+          
+          // バケットが存在しない場合は、デフォルトのバケット名を使用
+          const defaultBucketName = 'material-images';
+          console.log('デフォルトバケット名を使用:', defaultBucketName);
+          
+          // バケットの存在を確認せずにアップロードを試行
+          const fileExt = file.name.split('.').pop();
+          const fileName = `${materialId}/${stepId}/${Date.now()}.${fileExt}`;
+          
+          console.log('アップロード先ファイル名:', fileName);
+
+          const { data: uploadData, error: uploadError } = await supabase.storage
+            .from(defaultBucketName)
+            .upload(fileName, file);
+
+          if (uploadError) {
+            console.error('Supabase Storage アップロードエラー詳細:', {
+              error: uploadError,
+              message: uploadError.message,
+              details: uploadError.details,
+              hint: uploadError.hint,
+              code: uploadError.code
+            });
+            
+            setError(`画像のアップロードに失敗しました: ${uploadError.message || '不明なエラー'}`);
+            return;
+          }
+
+          console.log('アップロード成功:', uploadData);
+
+          // 公開URLを取得
+          const { data: urlData } = supabase.storage
+            .from(defaultBucketName)
+            .getPublicUrl(fileName);
+
+          console.log('公開URL:', urlData.publicUrl);
+
+          // material_imagesテーブルに保存
+          const { data: imageData, error: dbError } = await supabase
+            .from('material_images')
+            .insert({
+              material_id: materialId,
+              step_id: stepId,
+              image_url: urlData.publicUrl,
+              file_name: file.name,
+              file_size: file.size,
+              mime_type: file.type,
+              order: 1
+            })
+            .select()
+            .single();
+
+          if (dbError) {
+            console.error('データベース保存エラー:', dbError);
+            setError('画像情報の保存に失敗しました');
+            return;
+          }
+
+          console.log('データベース保存成功:', imageData);
+
+          // ステップ画像を更新
+          setStepImages(prev => {
+            const existingStep = prev.find(s => s.stepId === stepId);
+            if (existingStep) {
+              return prev.map(s => 
+                s.stepId === stepId 
+                  ? { ...s, images: [...s.images, imageData] }
+                  : s
+              );
+            } else {
+              return [...prev, { stepId, images: [imageData] }];
+            }
+          });
+
+          setSuccess('画像がアップロードされました');
           return;
         }
         
