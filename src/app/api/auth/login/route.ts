@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
     }
 
     return NextResponse.json({ user });
-  } catch (err) {
-    return NextResponse.json({ error: 'サーバーエラーが発生しました' }, { status: 500 });
+  } catch {
+    return NextResponse.json({ error: 'ログインに失敗しました' }, { status: 500 });
   }
 } 

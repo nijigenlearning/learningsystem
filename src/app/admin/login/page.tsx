@@ -35,8 +35,8 @@ export default function LoginPage() {
       } else {
         setError(data.error || 'ログインに失敗しました');
       }
-    } catch (err) {
-      setError('ログイン中にエラーが発生しました');
+    } catch {
+      setError('ログインに失敗しました');
     } finally {
       setLoading(false);
     }

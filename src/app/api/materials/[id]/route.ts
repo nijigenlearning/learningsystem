@@ -19,7 +19,7 @@ export async function GET(
     }
 
     return NextResponse.json(data);
-  } catch (err) {
+  } catch {
     return NextResponse.json({ error: 'サーバーエラーが発生しました' }, { status: 500 });
   }
 }
@@ -61,7 +61,7 @@ export async function PUT(
     }
 
     return NextResponse.json(data);
-  } catch (err) {
+  } catch {
     return NextResponse.json({ error: 'サーバーエラーが発生しました' }, { status: 500 });
   }
 }
@@ -77,7 +77,7 @@ export async function PATCH(
 
     // 事業所とテキスト登録の更新を許可（認証不要）
     const allowedFields = ['office', 'video_description', 'text_registration', 'transcript', 'instruction', 'note', 'recipe_steps', 'text_revision'];
-    const updateData: Record<string, any> = {};
+    const updateData: Record<string, unknown> = {};
     
     for (const field of allowedFields) {
       if (body[field] !== undefined) {
@@ -101,7 +101,7 @@ export async function PATCH(
     }
 
     return NextResponse.json(data);
-  } catch (err) {
+  } catch {
     return NextResponse.json({ error: 'サーバーエラーが発生しました' }, { status: 500 });
   }
 }
@@ -140,7 +140,7 @@ export async function DELETE(
     }
 
     return NextResponse.json({ message: '削除されました' });
-  } catch (err) {
+  } catch {
     return NextResponse.json({ error: 'サーバーエラーが発生しました' }, { status: 500 });
   }
 } 

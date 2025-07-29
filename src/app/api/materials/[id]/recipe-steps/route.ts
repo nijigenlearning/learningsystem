@@ -19,7 +19,7 @@ export async function GET(
     }
 
     return NextResponse.json(data || []);
-  } catch (err) {
+  } catch {
     return NextResponse.json({ error: 'サーバーエラーが発生しました' }, { status: 500 });
   }
 }
