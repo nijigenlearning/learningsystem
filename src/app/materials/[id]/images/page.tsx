@@ -7,7 +7,7 @@ import { Material, RecipeStep, MaterialImage } from '@/types/supabase';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
-import { Loader2, Plus, X, Edit, Save, Check } from 'lucide-react';
+import { Loader2, Plus, X, Save, Check } from 'lucide-react';
 import { Collapsible } from '@/components/ui/collapsible';
 
 interface StepInput {
@@ -286,7 +286,6 @@ export default function ImagesEditPage() {
             console.error('Supabase Storage アップロードエラー詳細:', {
               error: uploadError,
               message: uploadError.message,
-              details: uploadError.details,
               hint: uploadError.hint,
               code: uploadError.code
             });
@@ -387,7 +386,6 @@ export default function ImagesEditPage() {
         console.error('Supabase Storage アップロードエラー詳細:', {
           error: uploadError,
           message: uploadError.message,
-          details: uploadError.details,
           hint: uploadError.hint,
           code: uploadError.code
         });
