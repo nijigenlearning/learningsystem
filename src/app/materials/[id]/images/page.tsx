@@ -1,13 +1,13 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import { Material, RecipeStep, MaterialImage } from '@/types/supabase';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
-import { Plus, Trash2, Save, Loader2, Check, Upload, X } from 'lucide-react';
+import { Loader2, Plus, X, Edit, Save, Check } from 'lucide-react';
 import { Collapsible } from '@/components/ui/collapsible';
 
 interface StepInput {
@@ -25,9 +25,8 @@ export default function ImagesEditPage() {
   const materialId = params?.id as string;
   const router = useRouter();
   const [material, setMaterial] = useState<Material | null>(null);
-  const [steps, setSteps] = useState<RecipeStep[]>([]);
   const [stepImages, setStepImages] = useState<StepImage[]>([]);
-  const [newSteps, setNewSteps] = useState<StepInput[]>([{ content: '', isHeading: false }]);
+  const [newSteps, setNewSteps] = useState<StepInput[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [completing, setCompleting] = useState(false);
@@ -75,7 +74,6 @@ export default function ImagesEditPage() {
       const response = await fetch(`/api/materials/${materialId}/recipe-steps`);
       if (response.ok) {
         const stepsData = await response.json();
-        setSteps(stepsData);
         
         // 既存の手順を入力欄に表示
         if (stepsData.length > 0) {
@@ -110,8 +108,7 @@ export default function ImagesEditPage() {
         console.error('手順取得エラー:', response.statusText);
         setError('手順の取得に失敗しました');
       }
-    } catch (err) {
-      console.error('データ取得エラー:', err);
+    } catch {
       setError('データの取得に失敗しました');
     } finally {
       setLoading(false);
@@ -254,8 +251,8 @@ export default function ImagesEditPage() {
       // Supabase Storageバケットの存在確認
       try {
         console.log('Supabaseクライアント設定確認:', {
-          url: supabase.supabaseUrl,
-          hasAnonKey: !!supabase.supabaseKey
+          url: process.env.NEXT_PUBLIC_SUPABASE_URL,
+          hasAnonKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
         });
         
         const { data: bucketList, error: bucketError } = await supabase.storage.listBuckets();
@@ -428,7 +425,7 @@ export default function ImagesEditPage() {
 
       setSuccess('備考が保存されました');
       setEditingNote(false);
-    } catch (err) {
+    } catch {
       setError('備考の保存に失敗しました');
     }
   };
@@ -450,7 +447,7 @@ export default function ImagesEditPage() {
       }
 
       setSuccess('ソフトウェア情報が保存されました');
-    } catch (err) {
+    } catch {
       setError('ソフトウェア情報の保存に失敗しました');
     }
   };
@@ -468,7 +465,7 @@ export default function ImagesEditPage() {
       }
 
       setSuccess('完成見本画像が保存されました');
-    } catch (err) {
+    } catch {
       setError('完成見本画像の保存に失敗しました');
     }
   };
@@ -497,9 +494,9 @@ export default function ImagesEditPage() {
         const data = await response.json();
         setError(data.error || '画像登録の完了に失敗しました');
       }
-    } catch (err) {
-      console.error('完了処理エラー:', err);
-      setError(`完了処理に失敗しました: ${err instanceof Error ? err.message : '不明なエラー'}`);
+    } catch {
+      console.error('完了処理エラー');
+      setError('完了処理に失敗しました');
     } finally {
       setCompleting(false);
     }
@@ -641,20 +638,12 @@ export default function ImagesEditPage() {
               </div>
 
               <div className="space-y-4">
-                {newSteps.map((step, index) => {
-                  // 通し番号を計算（小見出しを除く）
-                  const currentStepNumber = newSteps
-                    .slice(0, index + 1)
-                    .filter((s, i) => !s.isHeading)
-                    .length;
-                  
-                  return (
-                    <div key={index} className="border rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <div className="flex items-center gap-4">
+                {newSteps.map((step, index) => (
+                  <div key={index} className="flex items-start space-x-2 mb-2">
+                      <div className="flex items-center gap-4">
                           {!step.isHeading && (
                             <span className="text-sm font-medium text-white bg-gray-900 px-2 py-1 rounded">
-                              {currentStepNumber}
+                              {index + 1}
                             </span>
                           )}
                           <label className="flex items-center gap-2">
@@ -676,7 +665,7 @@ export default function ImagesEditPage() {
                             size="sm"
                             className="text-red-600 border-red-300 hover:bg-red-50"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <X className="w-4 h-4" />
                           </Button>
                         )}
                       </div>
@@ -688,8 +677,7 @@ export default function ImagesEditPage() {
                         className="w-full"
                       />
                     </div>
-                  );
-                })}
+                ))}
               </div>
 
               <div className="mt-6 space-y-3">
@@ -728,7 +716,7 @@ export default function ImagesEditPage() {
                 // 通し番号を計算（小見出しを除く）
                 const currentStepNumber = newSteps
                   .slice(0, index + 1)
-                  .filter((s, i) => !s.isHeading)
+                  .filter((s) => !s.isHeading)
                   .length;
                 
                 const stepImageData = stepImages.find(s => s.stepId === currentStepNumber);
