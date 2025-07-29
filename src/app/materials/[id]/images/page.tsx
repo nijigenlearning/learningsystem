@@ -247,20 +247,46 @@ export default function ImagesEditPage() {
       // Supabase Storageバケットの存在確認
       try {
         const { data: bucketList, error: bucketError } = await supabase.storage.listBuckets();
-        console.log('利用可能なバケット:', bucketList);
+        console.log('利用可能なバケット一覧:', bucketList);
         
         if (bucketError) {
           console.error('バケット一覧取得エラー:', bucketError);
-        }
-        
-        const materialImagesBucket = bucketList?.find(bucket => bucket.name === 'material-images');
-        if (!materialImagesBucket) {
-          console.warn('material-imagesバケットが見つかりません');
-          setError('ストレージバケット「material-images」が設定されていません。管理者に連絡してください。');
+          setError(`バケット一覧の取得に失敗しました: ${bucketError.message}`);
           return;
         }
+        
+        if (!bucketList || bucketList.length === 0) {
+          console.warn('バケットが存在しません');
+          setError('ストレージバケットが設定されていません。管理者に連絡してください。');
+          return;
+        }
+        
+        console.log('利用可能なバケット名:', bucketList.map(b => b.name));
+        
+        // material-imagesまたはmaterial_imagesバケットを探す
+        const materialImagesBucket = bucketList.find(bucket => 
+          bucket.name === 'material-images' || 
+          bucket.name === 'material_images' ||
+          bucket.name.includes('material')
+        );
+        console.log('material-imagesバケットの検索結果:', materialImagesBucket);
+        
+        if (!materialImagesBucket) {
+          console.warn('material-imagesバケットが見つかりません');
+          console.log('利用可能なバケット名:', bucketList.map(b => b.name));
+          setError(`ストレージバケット「material-images」が設定されていません。利用可能なバケット: ${bucketList.map(b => b.name).join(', ')}。管理者に連絡してください。`);
+          return;
+        }
+        
+        console.log('material-imagesバケット確認完了:', materialImagesBucket);
+        
+        // 実際のバケット名を使用
+        const actualBucketName = materialImagesBucket.name;
+        console.log('使用するバケット名:', actualBucketName);
       } catch (bucketCheckError) {
         console.error('バケット確認エラー:', bucketCheckError);
+        setError(`バケット確認中にエラーが発生しました: ${bucketCheckError instanceof Error ? bucketCheckError.message : '不明なエラー'}`);
+        return;
       }
 
       // Supabase Storageにアップロード
@@ -270,7 +296,7 @@ export default function ImagesEditPage() {
       console.log('アップロード先ファイル名:', fileName);
 
       const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('material-images')
+        .from(actualBucketName) // 実際のバケット名を使用
         .upload(fileName, file);
 
       if (uploadError) {
@@ -299,7 +325,7 @@ export default function ImagesEditPage() {
 
       // 公開URLを取得
       const { data: urlData } = supabase.storage
-        .from('material-images')
+        .from(actualBucketName) // 実際のバケット名を使用
         .getPublicUrl(fileName);
 
       console.log('公開URL:', urlData.publicUrl);
