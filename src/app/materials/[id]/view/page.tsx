@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import { Material, RecipeStep, MaterialImage } from '@/types/supabase';
@@ -21,7 +21,7 @@ export default function MaterialViewPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       setError('');
@@ -68,18 +68,18 @@ export default function MaterialViewPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [materialId]);
 
   useEffect(() => {
     if (materialId) {
       fetchData();
     }
-  }, [materialId]);
+  }, [materialId, fetchData]);
 
   // 手順と画像を組み合わせる
   const stepsWithImages: StepWithImages[] = steps.map(step => ({
     step,
-    images: stepImages.filter(img => img.step_id === step.id)
+    images: stepImages.filter(img => img.step_id === step.id.toString())
   }));
 
   if (loading) {
