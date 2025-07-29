@@ -456,6 +456,41 @@ export default function ImagesEditPage() {
 
   const handleImageDelete = async (imageId: string, stepId: number) => {
     try {
+      // まず画像情報を取得
+      const { data: imageData, error: fetchError } = await supabase
+        .from('material_images')
+        .select('*')
+        .eq('id', imageId)
+        .single();
+
+      if (fetchError) {
+        console.error('画像情報取得エラー:', fetchError);
+        setError('画像情報の取得に失敗しました');
+        return;
+      }
+
+      // ストレージからファイルを削除
+      if (imageData.image_url) {
+        // URLからファイルパスを抽出
+        const urlParts = imageData.image_url.split('/');
+        const fileName = urlParts[urlParts.length - 1];
+        const filePath = `${materialId}/${stepId}/${fileName}`;
+
+        console.log('ストレージから削除するファイルパス:', filePath);
+
+        const { error: storageError } = await supabase.storage
+          .from('material-images')
+          .remove([filePath]);
+
+        if (storageError) {
+          console.error('ストレージ削除エラー:', storageError);
+          // ストレージ削除に失敗しても、DBからは削除を続行
+        } else {
+          console.log('ストレージから削除成功');
+        }
+      }
+
+      // データベースから削除
       const { error } = await supabase
         .from('material_images')
         .delete()
@@ -479,7 +514,7 @@ export default function ImagesEditPage() {
 
       setSuccess('画像が削除されました');
     } catch (err) {
-      console.error('画像削除エラー:', err);
+      console.error('画像削除エラー詳細:', err);
       setError('画像の削除に失敗しました');
     }
   };
@@ -522,6 +557,67 @@ export default function ImagesEditPage() {
       setSuccess('ソフトウェア情報が保存されました');
     } catch {
       setError('ソフトウェア情報の保存に失敗しました');
+    }
+  };
+
+  const handleSampleImageUpload = async (file: File) => {
+    try {
+      console.log('完成見本画像アップロード開始:', {
+        fileName: file.name,
+        fileSize: file.size,
+        fileType: file.type
+      });
+
+      // ファイルサイズチェック
+      if (file.size > 5 * 1024 * 1024) {
+        setError('ファイルサイズが大きすぎます。5MB以下のファイルを選択してください。');
+        return;
+      }
+
+      // ファイル名を生成
+      const fileExt = file.name.split('.').pop();
+      const fileName = `sample-images/${materialId}/${Date.now()}.${fileExt}`;
+
+      console.log('完成見本画像アップロード先ファイル名:', fileName);
+
+      // Supabase Storageにアップロード
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('material-images')
+        .upload(fileName, file);
+
+      if (uploadError) {
+        console.error('完成見本画像アップロードエラー:', uploadError);
+        setError(`完成見本画像のアップロードに失敗しました: ${uploadError.message || '不明なエラー'}`);
+        return;
+      }
+
+      console.log('完成見本画像アップロード成功:', uploadData);
+
+      // 公開URLを取得
+      const { data: urlData } = supabase.storage
+        .from('material-images')
+        .getPublicUrl(fileName);
+
+      console.log('完成見本画像公開URL:', urlData.publicUrl);
+
+      // materialsテーブルに保存
+      const { error: dbError } = await supabase
+        .from('materials')
+        .update({ sample_image_url: urlData.publicUrl })
+        .eq('id', materialId);
+
+      if (dbError) {
+        console.error('完成見本画像DB保存エラー:', dbError);
+        setError('完成見本画像の保存に失敗しました');
+        return;
+      }
+
+      // 状態を更新
+      setSampleImageUrl(urlData.publicUrl);
+      setSuccess('完成見本画像がアップロードされました');
+    } catch (err) {
+      console.error('完成見本画像アップロードエラー詳細:', err);
+      setError('完成見本画像のアップロードに失敗しました');
     }
   };
 
@@ -916,13 +1012,18 @@ export default function ImagesEditPage() {
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  完成見本画像URL
+                  完成見本画像をアップロード
                 </label>
-                <Input
-                  value={sampleImageUrl}
-                  onChange={(e) => setSampleImageUrl(e.target.value)}
-                  placeholder="完成見本画像のURLを入力してください"
-                  className="w-full"
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      handleSampleImageUpload(file);
+                    }
+                  }}
+                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                 />
               </div>
               {sampleImageUrl && (
@@ -938,12 +1039,6 @@ export default function ImagesEditPage() {
                   />
                 </div>
               )}
-              <Button
-                onClick={handleSampleImageSave}
-                className="w-full bg-green-600 hover:bg-green-700"
-              >
-                完成見本画像を保存
-              </Button>
             </div>
           </div>
         </div>
