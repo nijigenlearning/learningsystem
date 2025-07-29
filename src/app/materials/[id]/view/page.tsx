@@ -79,7 +79,7 @@ export default function MaterialViewPage() {
   // 手順と画像を組み合わせる
   const stepsWithImages: StepWithImages[] = steps.map(step => ({
     step,
-    images: stepImages.filter(img => img.step_id === step.id.toString())
+    images: stepImages.filter(img => img.step_id.toString() === step.id)
   }));
 
   if (loading) {
