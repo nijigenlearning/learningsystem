@@ -320,7 +320,7 @@ export default function HomePage() {
                     <span className="text-sm font-medium text-gray-900">
                       {material.software || '未設定'}
                     </span>
-                    <Link href={`/materials/${material.id}/steps`}>
+                    <Link href={`/materials/${material.id}/view`}>
                       <Button size="sm" variant="outline">
                         詳細
                       </Button>
