@@ -377,7 +377,7 @@ export default function ImagesEditPage() {
       console.log('アップロード先ファイル名:', fileName);
 
       const { data: uploadData, error: uploadError } = await supabase.storage
-        .from(actualBucketName) // 実際のバケット名を使用
+        .from('material-images') // 実際のバケット名を使用
         .upload(fileName, file);
 
       if (uploadError) {
@@ -403,7 +403,7 @@ export default function ImagesEditPage() {
 
       // 公開URLを取得
       const { data: urlData } = supabase.storage
-        .from(actualBucketName) // 実際のバケット名を使用
+        .from('material-images') // 実際のバケット名を使用
         .getPublicUrl(fileName);
 
       console.log('公開URL:', urlData.publicUrl);
