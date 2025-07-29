@@ -420,10 +420,13 @@ export default function MaterialViewPage() {
                     {!currentStep.step.heading && (
                       <div className="flex-shrink-0">
                         <span className="inline-flex items-center justify-center w-12 h-12 bg-blue-600 text-white text-xl font-bold rounded-full">
-                          {stepsWithImages
-                            .slice(0, selectedStepIndex + 1)
-                            .filter(s => !s.step.heading)
-                            .length}
+                          {selectedStepIndex !== null ? 
+                            stepsWithImages
+                              .slice(0, selectedStepIndex + 1)
+                              .filter(s => !s.step.heading)
+                              .length
+                            : 0
+                          }
                         </span>
                       </div>
                     )}
