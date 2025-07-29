@@ -622,13 +622,14 @@ export default function ImagesEditPage() {
 
         {/* 手順と画像の2列レイアウト */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start mb-8">
-          {/* 左列：手順作成入力欄（条件付き表示） */}
+          {/* 左列：手順編集 */}
           {showStepEditing && (
-            <div className="bg-white rounded-lg shadow-md p-6 border border-gray-900">
+            <div className="bg-white rounded-lg shadow-md p-6 border border-gray-300">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold text-gray-900">手順作成</h3>
                 <Button
                   onClick={addNewStep}
+                  variant="outline"
                   size="sm"
                   className="flex items-center gap-2"
                 >
@@ -639,44 +640,43 @@ export default function ImagesEditPage() {
 
               <div className="space-y-4">
                 {newSteps.map((step, index) => (
-                  <div key={index} className="flex items-start space-x-2 mb-2">
-                      <div className="flex items-center gap-4">
-                          {!step.isHeading && (
-                            <span className="text-sm font-medium text-white bg-gray-900 px-2 py-1 rounded">
-                              {index + 1}
-                            </span>
-                          )}
-                          <label className="flex items-center gap-2">
-                            <input
-                              type="checkbox"
-                              checked={step.isHeading}
-                              onChange={(e) => updateNewStep(index, 'isHeading', e.target.checked)}
-                              className="rounded"
-                            />
-                            <span className="text-sm font-medium">
-                              小見出しにする
-                            </span>
-                          </label>
-                        </div>
-                        {newSteps.length > 1 && (
-                          <Button
-                            onClick={() => removeNewStep(index)}
-                            variant="outline"
-                            size="sm"
-                            className="text-red-600 border-red-300 hover:bg-red-50"
-                          >
-                            <X className="w-4 h-4" />
-                          </Button>
-                        )}
-                      </div>
-                      <Textarea
-                        value={step.content}
-                        onChange={(e) => updateNewStep(index, 'content', e.target.value)}
-                        placeholder={step.isHeading ? "小見出しを入力してください" : "詳細手順を入力してください"}
-                        rows={3}
-                        className="w-full"
-                      />
+                  <div key={index} className="border rounded-lg p-4">
+                    <div className="flex items-center gap-4 mb-2">
+                      {!step.isHeading && (
+                        <span className="text-sm font-medium text-white bg-gray-900 px-2 py-1 rounded">
+                          {index + 1}
+                        </span>
+                      )}
+                      <label className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={step.isHeading}
+                          onChange={(e) => updateNewStep(index, 'isHeading', e.target.checked)}
+                          className="rounded"
+                        />
+                        <span className="text-sm font-medium">
+                          小見出しにする
+                        </span>
+                      </label>
+                      {newSteps.length > 1 && (
+                        <Button
+                          onClick={() => removeNewStep(index)}
+                          variant="outline"
+                          size="sm"
+                          className="text-red-600 border-red-300 hover:bg-red-50"
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      )}
                     </div>
+                    <Textarea
+                      value={step.content}
+                      onChange={(e) => updateNewStep(index, 'content', e.target.value)}
+                      placeholder={step.isHeading ? "小見出しを入力してください" : "詳細手順を入力してください"}
+                      rows={3}
+                      className="w-full"
+                    />
+                  </div>
                 ))}
               </div>
 
