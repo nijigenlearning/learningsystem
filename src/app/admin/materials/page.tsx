@@ -143,7 +143,7 @@ export default function AdminMaterialsPage() {
         router.push(`/materials/${material.id}/images`);
         break;
       case 5:
-        router.push(`/materials/${material.id}/confirm`);
+        router.push(`/materials/${material.id}/view`);
         break;
     }
   };
@@ -164,7 +164,7 @@ export default function AdminMaterialsPage() {
         router.push(`/materials/${material.id}/images`);
         break;
       case 5:
-        router.push(`/materials/${material.id}/confirm`);
+        router.push(`/materials/${material.id}/view`);
         break;
     }
   };
