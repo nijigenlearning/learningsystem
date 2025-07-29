@@ -625,6 +625,8 @@ export default function ImagesEditPage() {
     setSuccess('');
 
     try {
+      console.log('完了処理開始:', { materialId });
+      
       // 教材のimage_registrationステータスを更新
       const response = await fetch(`/api/materials/${materialId}`, {
         method: 'PATCH',
@@ -636,16 +638,25 @@ export default function ImagesEditPage() {
         }),
       });
 
+      console.log('APIレスポンス:', { 
+        status: response.status, 
+        statusText: response.statusText,
+        ok: response.ok 
+      });
+
       if (response.ok) {
+        const responseData = await response.json();
+        console.log('完了処理成功:', responseData);
         setSuccess('画像登録が完了しました');
         router.push('/admin/materials');
       } else {
-        const data = await response.json();
-        setError(data.error || '画像登録の完了に失敗しました');
+        const errorData = await response.json();
+        console.error('完了処理エラー詳細:', errorData);
+        setError(errorData.error || '画像登録の完了に失敗しました');
       }
-    } catch {
-      console.error('完了処理エラー');
-      setError('完了処理に失敗しました');
+    } catch (err) {
+      console.error('完了処理エラー詳細:', err);
+      setError(`完了処理に失敗しました: ${err instanceof Error ? err.message : '不明なエラー'}`);
     } finally {
       setCompleting(false);
     }
