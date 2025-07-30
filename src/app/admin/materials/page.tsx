@@ -56,7 +56,7 @@ export default function AdminMaterialsPage() {
       2: material.text_registration,
       3: material.text_revision,
       4: material.image_registration,
-      5: material.status === 'completed' ? 'completed' : material.confirmation
+      5: material.confirmation // statusの判定を削除して、confirmationのみで判定
     };
     return stepFields[step as keyof typeof stepFields] || 'pending';
   };
@@ -105,8 +105,8 @@ export default function AdminMaterialsPage() {
   const handleStepClick = (material: Material, step: number) => {
     const status = getStepStatus(material, step);
     
-    // 完了済みの場合は編集ボタンを表示するため、何もしない
-    if (status === 'completed') return;
+    // 工程5の場合は、statusがcompletedでもアクセス可能にする
+    if (status === 'completed' && step !== 5) return;
     
     // 前の工程が完了しているかチェック
     const canAccessStep = (targetStep: number) => {
