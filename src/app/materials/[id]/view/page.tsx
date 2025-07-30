@@ -16,6 +16,9 @@ export default function MaterialViewPage() {
   const params = useParams();
   const router = useRouter();
   const materialId = params?.id as string;
+  
+  console.log('🔵 MaterialViewPage 開始:', { materialId, params });
+  
   const [material, setMaterial] = useState<Material | null>(null);
   const [steps, setSteps] = useState<RecipeStep[]>([]);
   const [stepImages, setStepImages] = useState<MaterialImage[]>([]);

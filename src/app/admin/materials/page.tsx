@@ -110,8 +110,18 @@ export default function AdminMaterialsPage() {
   const handleStepClick = (material: Material, step: number) => {
     const status = getStepStatus(material, step);
     
+    console.log('🔵 工程クリック:', {
+      step,
+      status,
+      materialId: material.id,
+      materialTitle: material.title
+    });
+    
     // 工程5の場合は、statusがcompletedでもアクセス可能にする
-    if (status === 'completed' && step !== 5) return;
+    if (status === 'completed' && step !== 5) {
+      console.log('🔴 工程5以外の完了済み工程のため、処理を中断');
+      return;
+    }
     
     // 前の工程が完了しているかチェック
     const canAccessStep = (targetStep: number) => {
@@ -129,9 +139,12 @@ export default function AdminMaterialsPage() {
     
     // アクセス可能かチェック
     if (!canAccessStep(step)) {
+      console.log('🔴 アクセス不可:', { step, materialId: material.id });
       alert('前の工程を完了してから進めてください。');
       return;
     }
+    
+    console.log('✅ 遷移開始:', { step, materialId: material.id });
     
     // 各工程の編集画面に遷移
     switch (step) {
@@ -148,6 +161,7 @@ export default function AdminMaterialsPage() {
         router.push(`/materials/${material.id}/images`);
         break;
       case 5:
+        console.log('🔵 工程5に遷移:', `/materials/${material.id}/view`);
         router.push(`/materials/${material.id}/view`);
         break;
     }
