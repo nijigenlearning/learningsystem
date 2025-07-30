@@ -18,6 +18,9 @@ export default function StepsEditPage() {
   const params = useParams();
   const materialId = params?.id as string;
   const router = useRouter();
+  
+  console.log('🔵 StepsEditPage 開始:', { materialId, params });
+  
   const [material, setMaterial] = useState<Material | null>(null);
   const [steps, setSteps] = useState<RecipeStep[]>([]);
   const [newSteps, setNewSteps] = useState<StepInput[]>([{ content: '', isHeading: false }]);

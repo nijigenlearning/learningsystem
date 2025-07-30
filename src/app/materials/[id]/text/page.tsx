@@ -10,6 +10,9 @@ import { Loader2, Save } from 'lucide-react';
 
 export default function MaterialTextPage({ params }: { params: Promise<{ id: string }> }) {
   const router = useRouter();
+  
+  console.log('🔵 MaterialTextPage 開始');
+  
   const [material, setMaterial] = useState<Material | null>(null);
   const [text, setText] = useState('');
   const [instruction, setInstruction] = useState('');

@@ -11,6 +11,9 @@ import { Loader2, Save, Trash2 } from 'lucide-react';
 
 export default function MaterialEditPage() {
   const router = useRouter();
+  
+  console.log('🔵 MaterialEditPage 開始');
+  
   const [material, setMaterial] = useState<Material | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);

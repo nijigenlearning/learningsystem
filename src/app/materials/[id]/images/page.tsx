@@ -24,6 +24,9 @@ export default function ImagesEditPage() {
   const params = useParams();
   const materialId = params?.id as string;
   const router = useRouter();
+  
+  console.log('🔵 ImagesEditPage 開始:', { materialId, params });
+  
   const [material, setMaterial] = useState<Material | null>(null);
   const [stepImages, setStepImages] = useState<StepImage[]>([]);
   const [newSteps, setNewSteps] = useState<StepInput[]>([]);
