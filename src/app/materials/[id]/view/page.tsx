@@ -160,21 +160,17 @@ export default function MaterialViewPage() {
   const handleComplete = async () => {
     console.log('🔵 完了ボタンがクリックされました');
     console.log('🔵 materialId:', materialId);
-    
     try {
-      // 工程5を完了としてマーク
       const response = await fetch(`/api/materials/${materialId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          status: 'completed'
+          confirmation: 'completed' // statusの代わりにconfirmationを更新
         }),
       });
-
       console.log('🔵 APIレスポンス:', response.status, response.statusText);
-
       if (response.ok) {
         console.log('✅ 工程5完了としてマークしました');
         router.push('/admin/materials');
