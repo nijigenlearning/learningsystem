@@ -404,6 +404,17 @@ export default function MaterialViewPage() {
           </div>
         </div>
 
+        {/* 工程完了ボタン */}
+        <div className="mt-8 flex justify-center">
+          <Button
+            onClick={handleComplete}
+            className="flex items-center gap-2 px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg shadow-lg transition-colors"
+          >
+            <Check className="w-5 h-5" />
+            工程完了
+          </Button>
+        </div>
+
         {/* 既存のモーダル - テスト表示部分を削除 */}
         {showModal && currentStep && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -524,16 +535,6 @@ export default function MaterialViewPage() {
           </div>
         )}
         
-        {/* 工程完了ボタン */}
-        <div className="mt-8 flex justify-center">
-          <Button
-            onClick={handleComplete}
-            className="flex items-center gap-2 px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg shadow-lg transition-colors"
-          >
-            <Check className="w-5 h-5" />
-            工程完了
-          </Button>
-        </div>
       </div>
     </div>
   );
