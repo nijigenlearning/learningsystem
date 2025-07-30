@@ -95,6 +95,11 @@ export default function AdminMaterialsPage() {
       return STEP_COLORS.disabled;
     }
     
+    // 工程5の場合は、完了済みでも青色（現在の工程）として表示
+    if (step === 5 && status === 'completed') {
+      return STEP_COLORS.current;
+    }
+    
     if (status === 'completed') return STEP_COLORS.done;
     if (status === 'draft') return STEP_COLORS.current; // draftの場合は青色（現在の工程）
     if (step === currentStep && status === 'pending') return STEP_COLORS.current; // 現在の工程でpendingの場合は青色
@@ -252,31 +257,32 @@ export default function AdminMaterialsPage() {
                         const status = getStepStatus(material, step);
                         const isCompleted = status === 'completed';
                         
-                                                 const canAccess = canAccessStep(material, step);
-                         const isDisabled = isCompleted || !canAccess;
-                         
-                         return (
-                           <div key={step} className="flex-1 relative">
-                             <button
-                               onClick={() => handleStepClick(material, step)}
-                               className={`w-full h-10 rounded-full flex items-center justify-center text-base font-bold mx-1 transition-colors ${getStepColor(material, step)} ${!isDisabled ? 'hover:opacity-80 cursor-pointer' : 'cursor-not-allowed'}`}
-                               title={`${step}. ${getStepName(step)}`}
-                               style={{ minWidth: 0 }}
-                               disabled={isDisabled}
-                             >
-                               {step}
-                             </button>
-                             {isCompleted && (
-                               <button
-                                 onClick={() => handleEditStepClick(material, step)}
-                                 className="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 text-white text-xs rounded-full flex items-center justify-center hover:bg-blue-600"
-                                 title="編集"
-                               >
-                                 ✏️
-                               </button>
-                             )}
-                           </div>
-                         );
+                        const canAccess = canAccessStep(material, step);
+                        // 工程5の場合は、完了済みでも無効化しない
+                        const isDisabled = (isCompleted && step !== 5) || !canAccess;
+                        
+                        return (
+                          <div key={step} className="flex-1 relative">
+                            <button
+                              onClick={() => handleStepClick(material, step)}
+                              className={`w-full h-10 rounded-full flex items-center justify-center text-base font-bold mx-1 transition-colors ${getStepColor(material, step)} ${!isDisabled ? 'hover:opacity-80 cursor-pointer' : 'cursor-not-allowed'}`}
+                              title={`${step}. ${getStepName(step)}`}
+                              style={{ minWidth: 0 }}
+                              disabled={isDisabled}
+                            >
+                              {step}
+                            </button>
+                            {isCompleted && (
+                              <button
+                                onClick={() => handleEditStepClick(material, step)}
+                                className="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 text-white text-xs rounded-full flex items-center justify-center hover:bg-blue-600"
+                                title="編集"
+                              >
+                                ✏️
+                              </button>
+                            )}
+                          </div>
+                        );
                       })}
                     </div>
                   </div>
