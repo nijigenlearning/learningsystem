@@ -95,15 +95,17 @@ export default function AdminMaterialsPage() {
       return STEP_COLORS.disabled;
     }
     
-    // 工程5の場合は、完了済みでも青色（現在の工程）として表示
-    if (step === 5 && status === 'completed') {
-      return STEP_COLORS.current;
-    }
-    
+    // 完了済みの場合は緑色
     if (status === 'completed') return STEP_COLORS.done;
-    if (status === 'draft') return STEP_COLORS.current; // draftの場合は青色（現在の工程）
-    if (step === currentStep && status === 'pending') return STEP_COLORS.current; // 現在の工程でpendingの場合は青色
-    return STEP_COLORS.todo; // pendingの場合は未着手
+    
+    // draftの場合は青色（現在の工程）
+    if (status === 'draft') return STEP_COLORS.current;
+    
+    // 現在の工程でpendingの場合は青色
+    if (step === currentStep && status === 'pending') return STEP_COLORS.current;
+    
+    // pendingの場合は未着手
+    return STEP_COLORS.todo;
   };
 
   // 工程クリック時の処理
