@@ -155,6 +155,9 @@ export default function MaterialViewPage() {
   };
 
   const handleComplete = async () => {
+    console.log('🔵 完了ボタンがクリックされました');
+    console.log('🔵 materialId:', materialId);
+    
     try {
       // 工程5を完了としてマーク
       const response = await fetch(`/api/materials/${materialId}`, {
@@ -167,14 +170,17 @@ export default function MaterialViewPage() {
         }),
       });
 
+      console.log('🔵 APIレスポンス:', response.status, response.statusText);
+
       if (response.ok) {
-        console.log('工程5完了としてマークしました');
+        console.log('✅ 工程5完了としてマークしました');
         router.push('/admin/materials');
       } else {
-        console.error('工程完了の更新に失敗しました');
+        const errorText = await response.text();
+        console.error('❌ 工程完了の更新に失敗しました:', errorText);
       }
     } catch (error) {
-      console.error('工程完了処理エラー:', error);
+      console.error('❌ 工程完了処理エラー:', error);
     }
   };
 
@@ -409,9 +415,13 @@ export default function MaterialViewPage() {
           <Button
             onClick={handleComplete}
             className="flex items-center gap-2 px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-semibold rounded-lg shadow-lg transition-colors"
+            style={{ 
+              cursor: 'pointer',
+              border: '2px solid red' // デバッグ用の赤い境界線
+            }}
           >
             <Check className="w-5 h-5" />
-            工程完了
+            工程完了 (DEBUG)
           </Button>
         </div>
 
