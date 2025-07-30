@@ -308,7 +308,7 @@ export default function AdminMaterialsPage() {
                     <span className="text-sm font-medium text-gray-900">
                       {material.software || '未設定'}
                     </span>
-                    <Link href={`/materials/${material.id}/view`}>
+                    <Link href={`/materials/${material.id}/detail`}>
                       <Button size="sm" variant="outline">
                         詳細
                       </Button>

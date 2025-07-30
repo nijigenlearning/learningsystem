@@ -24,6 +24,7 @@ export default function LayoutWrapper({ children }: LayoutWrapperProps) {
     if (pathname.includes('/materials/') && pathname.includes('/steps')) return '手順作成（工程3）';
     if (pathname.includes('/materials/') && pathname.includes('/images')) return '画像登録（工程4）';
     if (pathname.includes('/materials/') && pathname.includes('/view')) return '確認・承認（工程5）';
+    if (pathname.includes('/materials/') && pathname.includes('/detail')) return '詳細';
     if (pathname.includes('/materials/') && pathname.includes('/confirm')) return '確認・承認（工程5）';
     return '';
   };
