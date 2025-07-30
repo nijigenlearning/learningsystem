@@ -1,11 +1,11 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { Material, RecipeStep, MaterialImage } from '@/types/supabase';
 import { supabase } from '@/lib/supabaseClient';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, X, Maximize2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, X, Maximize2, Trash2, CheckCircle, Circle, AlertCircle } from 'lucide-react';
 
 interface StepWithImages {
   step: RecipeStep;
@@ -14,6 +14,7 @@ interface StepWithImages {
 
 export default function MaterialDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const materialId = params?.id as string;
   const [material, setMaterial] = useState<Material | null>(null);
   const [steps, setSteps] = useState<RecipeStep[]>([]);
@@ -22,6 +23,7 @@ export default function MaterialDetailPage() {
   const [error, setError] = useState('');
   const [selectedStepIndex, setSelectedStepIndex] = useState<number | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -75,14 +77,84 @@ export default function MaterialDetailPage() {
     }
   };
 
-  // 手順と画像を組み合わせる
-  const stepsWithImages: StepWithImages[] = steps.map(step => {
-    const filteredImages = stepImages.filter(img => img.step_id === step.step_number);
-    return {
-      step,
-      images: filteredImages
-    };
-  });
+  // 工程の登録状況を取得
+  const getStepStatus = (stepNumber: number) => {
+    if (!material) return 'pending';
+    
+    switch (stepNumber) {
+      case 1:
+        return material.video_description ? 'completed' : 'pending';
+      case 2:
+        return material.text_registration ? 'completed' : 'pending';
+      case 3:
+        return steps.length > 0 ? 'completed' : 'pending';
+      case 4:
+        return stepImages.length > 0 ? 'completed' : 'pending';
+      default:
+        return 'pending';
+    }
+  };
+
+  // 工程のタイトルを取得
+  const getStepTitle = (stepNumber: number) => {
+    switch (stepNumber) {
+      case 1:
+        return '動画登録';
+      case 2:
+        return 'テキスト登録';
+      case 3:
+        return '手順作成';
+      case 4:
+        return '画像登録';
+      default:
+        return '';
+    }
+  };
+
+  // 工程の詳細情報を取得
+  const getStepDetails = (stepNumber: number) => {
+    switch (stepNumber) {
+      case 1:
+        return material?.video_description || '未登録';
+      case 2:
+        return material?.text_registration || '未登録';
+      case 3:
+        return steps.length > 0 ? `${steps.length}個の手順が登録済み` : '未登録';
+      case 4:
+        return stepImages.length > 0 ? `${stepImages.length}個の画像が登録済み` : '未登録';
+      default:
+        return '未登録';
+    }
+  };
+
+  // 教材削除
+  const handleDelete = async () => {
+    if (!confirm('この教材を削除しますか？この操作は取り消せません。')) {
+      return;
+    }
+
+    setDeleting(true);
+    try {
+      const { error } = await supabase
+        .from('materials')
+        .delete()
+        .eq('id', materialId);
+
+      if (error) {
+        console.error('削除エラー:', error);
+        alert('教材の削除に失敗しました');
+        return;
+      }
+
+      alert('教材を削除しました');
+      router.push('/admin/materials');
+    } catch (error) {
+      console.error('削除エラー:', error);
+      alert('教材の削除に失敗しました');
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const closeModal = () => {
     setShowModal(false);
@@ -90,7 +162,7 @@ export default function MaterialDetailPage() {
   };
 
   const nextStep = () => {
-    if (selectedStepIndex !== null && selectedStepIndex < stepsWithImages.length - 1) {
+    if (selectedStepIndex !== null && selectedStepIndex < steps.length - 1) {
       setSelectedStepIndex(selectedStepIndex + 1);
     }
   };
@@ -101,7 +173,7 @@ export default function MaterialDetailPage() {
     }
   };
 
-  const currentStep = selectedStepIndex !== null ? stepsWithImages[selectedStepIndex] : null;
+  const currentStep = selectedStepIndex !== null ? steps[selectedStepIndex] : null;
 
   if (loading) {
     return (
@@ -129,10 +201,56 @@ export default function MaterialDetailPage() {
       <div className="max-w-6xl mx-auto p-6">
         {/* ヘッダー */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">{material.title}</h1>
+          <div className="flex items-center justify-between mb-4">
+            <h1 className="text-3xl font-bold text-gray-900">{material.title}</h1>
+            <Button
+              onClick={handleDelete}
+              disabled={deleting}
+              variant="destructive"
+              className="flex items-center gap-2"
+            >
+              <Trash2 className="w-4 h-4" />
+              {deleting ? '削除中...' : '教材削除'}
+            </Button>
+          </div>
           {material.software && (
             <p className="text-lg text-gray-600">使用ソフト: {material.software}</p>
           )}
+        </div>
+
+        {/* 工程登録状況 */}
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">登録状況</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map((stepNumber) => {
+              const status = getStepStatus(stepNumber);
+              const title = getStepTitle(stepNumber);
+              const details = getStepDetails(stepNumber);
+
+              return (
+                <div key={stepNumber} className="border rounded-lg p-4 bg-white shadow-sm">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="flex-shrink-0">
+                      {status === 'completed' ? (
+                        <CheckCircle className="w-6 h-6 text-green-600" />
+                      ) : status === 'pending' ? (
+                        <Circle className="w-6 h-6 text-gray-400" />
+                      ) : (
+                        <AlertCircle className="w-6 h-6 text-yellow-600" />
+                      )}
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900">工程{stepNumber}</h3>
+                      <p className="text-sm text-gray-600">{title}</p>
+                    </div>
+                  </div>
+                  <div className="text-sm text-gray-700">
+                    {details}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
 
         {/* 動画情報 */}
@@ -151,7 +269,7 @@ export default function MaterialDetailPage() {
         )}
 
         {/* 手順一覧 */}
-        {stepsWithImages.length > 0 && (
+        {steps.length > 0 && (
           <div className="mb-8">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-xl font-semibold text-gray-900">手順</h2>
@@ -168,11 +286,11 @@ export default function MaterialDetailPage() {
             </div>
             
             <div className="space-y-6">
-              {stepsWithImages.map((stepWithImages, index) => {
-                const { step, images } = stepWithImages;
-                const stepNumber = stepsWithImages
+              {steps.map((step, index) => {
+                const stepImagesForStep = stepImages.filter(img => img.step_id === step.step_number);
+                const stepNumber = steps
                   .slice(0, index + 1)
-                  .filter(s => !s.step.heading)
+                  .filter(s => !s.heading)
                   .length;
 
                 return (
@@ -190,9 +308,9 @@ export default function MaterialDetailPage() {
                           {step.content}
                         </h3>
                         
-                        {images.length > 0 && (
+                        {stepImagesForStep.length > 0 && (
                           <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {images.map((image) => (
+                            {stepImagesForStep.map((image) => (
                               <div key={image.id} className="relative group">
                                 <img
                                   src={image.image_url}
@@ -255,13 +373,13 @@ export default function MaterialDetailPage() {
                           <ChevronLeft className="w-4 h-4" />
                         </Button>
                         <span className="text-sm text-gray-600">
-                          {selectedStepIndex + 1} / {stepsWithImages.length}
+                          {selectedStepIndex + 1} / {steps.length}
                         </span>
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={nextStep}
-                          disabled={selectedStepIndex === stepsWithImages.length - 1}
+                          disabled={selectedStepIndex === steps.length - 1}
                         >
                           <ChevronRight className="w-4 h-4" />
                         </Button>
@@ -275,13 +393,13 @@ export default function MaterialDetailPage() {
                 
                 <div className="space-y-4">
                   <div className="flex items-start gap-3">
-                    {!currentStep.step.heading && (
+                    {!currentStep.heading && (
                       <div className="flex-shrink-0">
                         <span className="inline-flex items-center justify-center w-12 h-12 bg-blue-600 text-white text-xl font-bold rounded-full">
                           {selectedStepIndex !== null ?
-                            stepsWithImages
+                            steps
                               .slice(0, selectedStepIndex + 1)
-                              .filter(s => !s.step.heading)
+                              .filter(s => !s.heading)
                               .length
                             : 0
                           }
@@ -289,25 +407,28 @@ export default function MaterialDetailPage() {
                       </div>
                     )}
                     <div className="flex-1">
-                      <h3 className={`font-bold text-gray-900 ${currentStep.step.heading ? 'text-2xl' : 'text-xl'}`}>
-                        {currentStep.step.content}
+                      <h3 className={`font-bold text-gray-900 ${currentStep.heading ? 'text-2xl' : 'text-xl'}`}>
+                        {currentStep.content}
                       </h3>
                     </div>
                   </div>
                   
-                  {currentStep.images.length > 0 && (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {currentStep.images.map((image) => (
-                        <div key={image.id} className="bg-gray-100 rounded-lg overflow-hidden">
-                          <img
-                            src={image.image_url}
-                            alt={image.file_name}
-                            className="w-full h-auto object-contain"
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                  {(() => {
+                    const currentStepImages = stepImages.filter(img => img.step_id === currentStep.step_number);
+                    return currentStepImages.length > 0 && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {currentStepImages.map((image) => (
+                          <div key={image.id} className="bg-gray-100 rounded-lg overflow-hidden">
+                            <img
+                              src={image.image_url}
+                              alt={image.file_name}
+                              className="w-full h-auto object-contain"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
                 </div>
               </div>
             </div>
