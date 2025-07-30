@@ -5,12 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { Material, RecipeStep, MaterialImage } from '@/types/supabase';
 import { supabase } from '@/lib/supabaseClient';
 import { Button } from '@/components/ui/button';
-import { ChevronLeft, ChevronRight, X, Maximize2, Trash2, CheckCircle, Circle, AlertCircle } from 'lucide-react';
-
-interface StepWithImages {
-  step: RecipeStep;
-  images: MaterialImage[];
-}
+import { Trash2, CheckCircle, Circle } from 'lucide-react';
 
 export default function MaterialDetailPage() {
   const params = useParams();
@@ -21,10 +16,7 @@ export default function MaterialDetailPage() {
   const [stepImages, setStepImages] = useState<MaterialImage[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [selectedStepIndex, setSelectedStepIndex] = useState<number | null>(null);
-  const [showModal, setShowModal] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [expandedSteps, setExpandedSteps] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     fetchData();
@@ -113,36 +105,19 @@ export default function MaterialDetailPage() {
   };
 
   // 工程の詳細情報を取得
-  const getStepDetails = (stepNumber: number, isExpanded: boolean = false) => {
+  const getStepDetails = (stepNumber: number) => {
     switch (stepNumber) {
       case 1:
-        const videoDesc = material?.video_description;
-        if (!videoDesc) return '未登録';
-        if (isExpanded) return videoDesc;
-        return videoDesc.length > 50 ? `${videoDesc.substring(0, 50)}...` : videoDesc;
+        return material?.video_description ? '登録済み' : '未登録';
       case 2:
-        const textReg = material?.text_registration;
-        if (!textReg) return '未登録';
-        if (isExpanded) return textReg;
-        return textReg.length > 50 ? `${textReg.substring(0, 50)}...` : textReg;
+        return material?.text_registration ? '登録済み' : '未登録';
       case 3:
-        return steps.length > 0 ? `${steps.length}個の手順が登録済み` : '未登録';
+        return steps.length > 0 ? '登録済み' : '未登録';
       case 4:
-        return stepImages.length > 0 ? `${stepImages.length}個の画像が登録済み` : '未登録';
+        return stepImages.length > 0 ? '登録済み' : '未登録';
       default:
         return '未登録';
     }
-  };
-
-  // 詳細情報の展開/折りたたみ
-  const toggleStepExpansion = (stepNumber: number) => {
-    const newExpandedSteps = new Set(expandedSteps);
-    if (newExpandedSteps.has(stepNumber)) {
-      newExpandedSteps.delete(stepNumber);
-    } else {
-      newExpandedSteps.add(stepNumber);
-    }
-    setExpandedSteps(newExpandedSteps);
   };
 
   // 教材削除
@@ -174,24 +149,7 @@ export default function MaterialDetailPage() {
     }
   };
 
-  const closeModal = () => {
-    setShowModal(false);
-    setSelectedStepIndex(null);
-  };
 
-  const nextStep = () => {
-    if (selectedStepIndex !== null && selectedStepIndex < steps.length - 1) {
-      setSelectedStepIndex(selectedStepIndex + 1);
-    }
-  };
-
-  const prevStep = () => {
-    if (selectedStepIndex !== null && selectedStepIndex > 0) {
-      setSelectedStepIndex(selectedStepIndex - 1);
-    }
-  };
-
-  const currentStep = selectedStepIndex !== null ? steps[selectedStepIndex] : null;
 
   if (loading) {
     return (
@@ -243,8 +201,7 @@ export default function MaterialDetailPage() {
             {[1, 2, 3, 4].map((stepNumber) => {
               const status = getStepStatus(stepNumber);
               const title = getStepTitle(stepNumber);
-              const isExpanded = expandedSteps.has(stepNumber);
-              const details = getStepDetails(stepNumber, isExpanded);
+              const details = getStepDetails(stepNumber);
 
               return (
                 <div key={stepNumber} className={`border rounded-lg p-4 shadow-sm transition-colors ${
@@ -274,12 +231,7 @@ export default function MaterialDetailPage() {
                       ? 'bg-green-100 text-green-800' 
                       : 'bg-gray-100 text-gray-600'
                   }`}>
-                    <div className="flex items-center gap-2 cursor-pointer" onClick={() => toggleStepExpansion(stepNumber)}>
-                      <span className="flex-1">{details}</span>
-                      {(stepNumber === 1 || stepNumber === 2) && (
-                        <ChevronRight className={`w-4 h-4 transition-transform duration-300 ${isExpanded ? 'rotate-90' : ''}`} />
-                      )}
-                    </div>
+                    {details}
                   </div>
                 </div>
               );
@@ -302,169 +254,16 @@ export default function MaterialDetailPage() {
           </div>
         )}
 
-        {/* 手順一覧 */}
-        {steps.length > 0 && (
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-semibold text-gray-900">手順</h2>
-              <Button
-                onClick={() => {
-                  setSelectedStepIndex(0);
-                  setShowModal(true);
-                }}
-                className="flex items-center gap-2"
-              >
-                <Maximize2 className="w-4 h-4" />
-                拡大表示
-              </Button>
-            </div>
-            
-            <div className="space-y-6">
-              {steps.map((step, index) => {
-                const stepImagesForStep = stepImages.filter(img => img.step_id === step.step_number);
-                const stepNumber = steps
-                  .slice(0, index + 1)
-                  .filter(s => !s.heading)
-                  .length;
-
-                return (
-                  <div key={step.id} className="border rounded-lg p-6 bg-gray-50">
-                    <div className="flex items-start gap-4">
-                      {!step.heading && (
-                        <div className="flex-shrink-0">
-                          <span className="inline-flex items-center justify-center w-12 h-12 bg-blue-600 text-white text-xl font-bold rounded-full">
-                            {stepNumber}
-                          </span>
-                        </div>
-                      )}
-                      <div className="flex-1">
-                        <h3 className={`font-bold text-gray-900 ${step.heading ? 'text-2xl' : 'text-xl'}`}>
-                          {step.content}
-                        </h3>
-                        
-                        {stepImagesForStep.length > 0 && (
-                          <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                            {stepImagesForStep.map((image) => (
-                              <div key={image.id} className="relative group">
-                                <img
-                                  src={image.image_url}
-                                  alt={image.file_name}
-                                  className="w-full h-48 object-cover rounded-lg shadow-sm hover:shadow-md transition-shadow duration-300 cursor-pointer"
-                                  onClick={() => {
-                                    setSelectedStepIndex(index);
-                                    setShowModal(true);
-                                  }}
-                                />
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
         {/* 完成見本 */}
         {material.sample_image_url && (
           <div className="mb-8">
             <h2 className="text-xl font-semibold text-gray-900 mb-4">完成見本</h2>
-            <div className="relative group cursor-pointer" onClick={() => setShowModal(true)}>
-              <div className="w-full max-w-md bg-gray-100 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 overflow-hidden">
-                <img
-                  src={material.sample_image_url}
-                  alt="完成見本"
-                  className="w-full h-auto object-contain"
-                />
-              </div>
-              <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-300 rounded-lg flex items-center justify-center pointer-events-none">
-                <div className="bg-white bg-opacity-90 rounded-full p-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                  <Maximize2 className="w-5 h-5 text-gray-700" />
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* モーダル */}
-        {showModal && currentStep && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-4">
-                    {selectedStepIndex !== null && (
-                      <>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={prevStep}
-                          disabled={selectedStepIndex === 0}
-                        >
-                          <ChevronLeft className="w-4 h-4" />
-                        </Button>
-                        <span className="text-sm text-gray-600">
-                          {selectedStepIndex + 1} / {steps.length}
-                        </span>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={nextStep}
-                          disabled={selectedStepIndex === steps.length - 1}
-                        >
-                          <ChevronRight className="w-4 h-4" />
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                  <Button variant="outline" size="sm" onClick={closeModal}>
-                    <X className="w-4 h-4" />
-                  </Button>
-                </div>
-                
-                <div className="space-y-4">
-                  <div className="flex items-start gap-3">
-                    {!currentStep.heading && (
-                      <div className="flex-shrink-0">
-                        <span className="inline-flex items-center justify-center w-12 h-12 bg-blue-600 text-white text-xl font-bold rounded-full">
-                          {selectedStepIndex !== null ?
-                            steps
-                              .slice(0, selectedStepIndex + 1)
-                              .filter(s => !s.heading)
-                              .length
-                            : 0
-                          }
-                        </span>
-                      </div>
-                    )}
-                    <div className="flex-1">
-                      <h3 className={`font-bold text-gray-900 ${currentStep.heading ? 'text-2xl' : 'text-xl'}`}>
-                        {currentStep.content}
-                      </h3>
-                    </div>
-                  </div>
-                  
-                  {(() => {
-                    const currentStepImages = stepImages.filter(img => img.step_id === currentStep.step_number);
-                    return currentStepImages.length > 0 && (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        {currentStepImages.map((image) => (
-                          <div key={image.id} className="bg-gray-100 rounded-lg overflow-hidden">
-                            <img
-                              src={image.image_url}
-                              alt={image.file_name}
-                              className="w-full h-auto object-contain"
-                            />
-                          </div>
-                        ))}
-                      </div>
-                    );
-                  })()}
-                </div>
-              </div>
+            <div className="w-full max-w-md bg-gray-100 rounded-lg shadow-md overflow-hidden">
+              <img
+                src={material.sample_image_url}
+                alt="完成見本"
+                className="w-full h-auto object-contain"
+              />
             </div>
           </div>
         )}
