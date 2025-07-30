@@ -24,6 +24,7 @@ export default function MaterialDetailPage() {
   const [selectedStepIndex, setSelectedStepIndex] = useState<number | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [expandedSteps, setExpandedSteps] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     fetchData();
@@ -112,12 +113,18 @@ export default function MaterialDetailPage() {
   };
 
   // 工程の詳細情報を取得
-  const getStepDetails = (stepNumber: number) => {
+  const getStepDetails = (stepNumber: number, isExpanded: boolean = false) => {
     switch (stepNumber) {
       case 1:
-        return material?.video_description || '未登録';
+        const videoDesc = material?.video_description;
+        if (!videoDesc) return '未登録';
+        if (isExpanded) return videoDesc;
+        return videoDesc.length > 50 ? `${videoDesc.substring(0, 50)}...` : videoDesc;
       case 2:
-        return material?.text_registration || '未登録';
+        const textReg = material?.text_registration;
+        if (!textReg) return '未登録';
+        if (isExpanded) return textReg;
+        return textReg.length > 50 ? `${textReg.substring(0, 50)}...` : textReg;
       case 3:
         return steps.length > 0 ? `${steps.length}個の手順が登録済み` : '未登録';
       case 4:
@@ -125,6 +132,17 @@ export default function MaterialDetailPage() {
       default:
         return '未登録';
     }
+  };
+
+  // 詳細情報の展開/折りたたみ
+  const toggleStepExpansion = (stepNumber: number) => {
+    const newExpandedSteps = new Set(expandedSteps);
+    if (newExpandedSteps.has(stepNumber)) {
+      newExpandedSteps.delete(stepNumber);
+    } else {
+      newExpandedSteps.add(stepNumber);
+    }
+    setExpandedSteps(newExpandedSteps);
   };
 
   // 教材削除
@@ -225,27 +243,43 @@ export default function MaterialDetailPage() {
             {[1, 2, 3, 4].map((stepNumber) => {
               const status = getStepStatus(stepNumber);
               const title = getStepTitle(stepNumber);
-              const details = getStepDetails(stepNumber);
+              const isExpanded = expandedSteps.has(stepNumber);
+              const details = getStepDetails(stepNumber, isExpanded);
 
               return (
-                <div key={stepNumber} className="border rounded-lg p-4 bg-white shadow-sm">
+                <div key={stepNumber} className={`border rounded-lg p-4 shadow-sm transition-colors ${
+                  status === 'completed' 
+                    ? 'bg-green-50 border-green-200' 
+                    : 'bg-gray-50 border-gray-200'
+                }`}>
                   <div className="flex items-center gap-3 mb-3">
                     <div className="flex-shrink-0">
                       {status === 'completed' ? (
-                        <CheckCircle className="w-6 h-6 text-green-600" />
-                      ) : status === 'pending' ? (
-                        <Circle className="w-6 h-6 text-gray-400" />
+                        <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center">
+                          <CheckCircle className="w-5 h-5 text-white" />
+                        </div>
                       ) : (
-                        <AlertCircle className="w-6 h-6 text-yellow-600" />
+                        <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
+                          <Circle className="w-5 h-5 text-gray-600" />
+                        </div>
                       )}
                     </div>
                     <div>
-                      <h3 className="font-semibold text-gray-900">工程{stepNumber}</h3>
+                      <h3 className="font-bold text-gray-900">工程{stepNumber}</h3>
                       <p className="text-sm text-gray-600">{title}</p>
                     </div>
                   </div>
-                  <div className="text-sm text-gray-700">
-                    {details}
+                  <div className={`text-sm p-2 rounded ${
+                    status === 'completed' 
+                      ? 'bg-green-100 text-green-800' 
+                      : 'bg-gray-100 text-gray-600'
+                  }`}>
+                    <div className="flex items-center gap-2 cursor-pointer" onClick={() => toggleStepExpansion(stepNumber)}>
+                      <span className="flex-1">{details}</span>
+                      {(stepNumber === 1 || stepNumber === 2) && (
+                        <ChevronRight className={`w-4 h-4 transition-transform duration-300 ${isExpanded ? 'rotate-90' : ''}`} />
+                      )}
+                    </div>
                   </div>
                 </div>
               );
