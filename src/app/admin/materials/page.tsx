@@ -56,7 +56,7 @@ export default function AdminMaterialsPage() {
       2: material.text_registration,
       3: material.text_revision,
       4: material.image_registration,
-      5: material.confirmation
+      5: material.status === 'completed' ? 'completed' : material.confirmation
     };
     return stepFields[step as keyof typeof stepFields] || 'pending';
   };

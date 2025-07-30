@@ -32,6 +32,7 @@ export interface Material {
   text_revision: string;
   image_registration: string;
   confirmation: string;
+  status?: string;
   office?: string;
   created_at: string;
   updated_at: string;

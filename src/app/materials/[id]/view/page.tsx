@@ -154,9 +154,28 @@ export default function MaterialViewPage() {
     setSelectedStepIndex(null);
   };
 
-  const handleComplete = () => {
-    // 工程5を完了としてマーク
-    router.push('/admin/materials');
+  const handleComplete = async () => {
+    try {
+      // 工程5を完了としてマーク
+      const response = await fetch(`/api/materials/${materialId}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          status: 'completed'
+        }),
+      });
+
+      if (response.ok) {
+        console.log('工程5完了としてマークしました');
+        router.push('/admin/materials');
+      } else {
+        console.error('工程完了の更新に失敗しました');
+      }
+    } catch (error) {
+      console.error('工程完了処理エラー:', error);
+    }
   };
 
   const nextStep = () => {
