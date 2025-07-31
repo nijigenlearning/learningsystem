@@ -239,15 +239,6 @@ export default function HomePage() {
         </div>
       </header>
       <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="flex justify-center gap-4">
-          <Link
-            href="/admin/login"
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            管理者ログイン
-          </Link>
-        </div>
-
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {materials.map((material) => {
             const currentStep = getCurrentStep(material);
@@ -320,7 +311,7 @@ export default function HomePage() {
                     <span className="text-sm font-medium text-gray-900">
                       {material.software || '未設定'}
                     </span>
-                    <Link href={`/materials/${material.id}/view`}>
+                    <Link href={`/materials/${material.id}/detail`}>
                       <Button size="sm" variant="outline">
                         詳細
                       </Button>
