@@ -18,6 +18,9 @@ export default function MaterialDetailPage() {
   const [error, setError] = useState('');
   const [deleting, setDeleting] = useState(false);
 
+  // 一般画面からアクセスされたかどうかを判定
+  const isGeneralView = typeof window !== 'undefined' && !window.location.pathname.includes('/admin');
+
   useEffect(() => {
     fetchData();
   }, [materialId]);
@@ -179,15 +182,17 @@ export default function MaterialDetailPage() {
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <h1 className="text-3xl font-bold text-gray-900">{material.title}</h1>
-            <Button
-              onClick={handleDelete}
-              disabled={deleting}
-              variant="destructive"
-              className="flex items-center gap-2"
-            >
-              <Trash2 className="w-4 h-4" />
-              {deleting ? '削除中...' : '教材削除'}
-            </Button>
+            {!isGeneralView && (
+              <Button
+                onClick={handleDelete}
+                disabled={deleting}
+                variant="destructive"
+                className="flex items-center gap-2"
+              >
+                <Trash2 className="w-4 h-4" />
+                {deleting ? '削除中...' : '教材削除'}
+              </Button>
+            )}
           </div>
           {material.software && (
             <p className="text-lg text-gray-600">使用ソフト: {material.software}</p>
