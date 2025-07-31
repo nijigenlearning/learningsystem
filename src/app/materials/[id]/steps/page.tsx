@@ -45,6 +45,9 @@ export default function StepsEditPage() {
   const [showBookmarkModal, setShowBookmarkModal] = useState(false);
   const [bookmarkColor, setBookmarkColor] = useState('yellow');
   const [bookmarkNote, setBookmarkNote] = useState('');
+  const [showBookmarkButton, setShowBookmarkButton] = useState(false);
+  const [bookmarkButtonPosition, setBookmarkButtonPosition] = useState({ x: 0, y: 0 });
+  const [hoveredBookmark, setHoveredBookmark] = useState<string | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -358,15 +361,28 @@ export default function StepsEditPage() {
   const handleTextSelection = () => {
     const selection = window.getSelection();
     if (selection && selection.toString().trim()) {
-      // 選択後に少し待ってからモーダルを表示（コピー操作を妨げないように）
-      setTimeout(() => {
-        const currentSelection = window.getSelection();
-        if (currentSelection && currentSelection.toString().trim()) {
-          setSelectedText(currentSelection.toString().trim());
-          setShowBookmarkModal(true);
-        }
-      }, 500); // 500ms待機
+      // 選択位置にしおりボタンを表示
+      const range = selection.getRangeAt(0);
+      const rect = range.getBoundingClientRect();
+      const container = document.querySelector('.text-container');
+      if (container) {
+        const containerRect = container.getBoundingClientRect();
+        setBookmarkButtonPosition({
+          x: rect.left - containerRect.left + rect.width / 2,
+          y: rect.top - containerRect.top - 40
+        });
+        setSelectedText(selection.toString().trim());
+        setShowBookmarkButton(true);
+      }
+    } else {
+      setShowBookmarkButton(false);
     }
+  };
+
+  // しおりボタンクリック時の処理
+  const handleBookmarkButtonClick = () => {
+    setShowBookmarkModal(true);
+    setShowBookmarkButton(false);
   };
 
   // 右クリックメニューの処理
@@ -438,7 +454,10 @@ export default function StepsEditPage() {
         orange: 'bg-orange-200'
       }[bookmark.color] || 'bg-yellow-200';
 
-      result = `${before}<mark class="${markerClass} cursor-pointer" title="${bookmark.note}" data-bookmark-id="${bookmark.id}">${marked}</mark>${after}`;
+      const hoverClass = hoveredBookmark === bookmark.id ? 'ring-2 ring-blue-400' : '';
+      const noteIcon = bookmark.note ? ' 📝' : '';
+
+      result = `${before}<mark class="${markerClass} ${hoverClass} cursor-pointer relative group" title="${bookmark.note || bookmark.text}" data-bookmark-id="${bookmark.id}" onmouseenter="this.setAttribute('data-hover', 'true')" onmouseleave="this.removeAttribute('data-hover')">${marked}${noteIcon}<span class="absolute -top-6 left-0 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap z-10">${bookmark.note || 'メモなし'}</span></mark>${after}`;
     });
 
     return result;
@@ -638,19 +657,65 @@ export default function StepsEditPage() {
             <div className="mb-4 p-2 bg-blue-50 rounded-lg text-xs text-blue-700">
               <p className="mb-1"><strong>しおりの追加方法：</strong></p>
               <ul className="space-y-1 text-xs">
-                <li>• テキストを選択して500ms待つ</li>
+                <li>• テキストを選択 → 「📖 しおり追加」ボタンをクリック</li>
                 <li>• 右クリック → しおりを追加</li>
                 <li>• Ctrl+B（テキスト選択後）</li>
               </ul>
+              <p className="mt-2 text-xs text-blue-600">
+                💡 しおり位置インジケーターで各しおりの位置を確認できます
+              </p>
             </div>
 
             <div 
-              className="bg-gray-50 rounded-lg p-4 overflow-y-auto cursor-text" 
+              className="bg-gray-50 rounded-lg p-4 overflow-y-auto cursor-text text-container relative" 
               style={{ maxHeight: 'calc(100vh - 400px)' }}
               onMouseUp={handleTextSelection}
               onContextMenu={handleContextMenu}
               onKeyDown={handleKeyDown}
             >
+              {/* しおりボタン */}
+              {showBookmarkButton && (
+                <div 
+                  className="absolute z-20 bg-blue-600 text-white px-3 py-1 rounded-lg shadow-lg cursor-pointer hover:bg-blue-700 transition-colors"
+                  style={{
+                    left: bookmarkButtonPosition.x,
+                    top: bookmarkButtonPosition.y,
+                    transform: 'translateX(-50%)'
+                  }}
+                  onClick={handleBookmarkButtonClick}
+                >
+                  📖 しおり追加
+                </div>
+              )}
+
+              {/* しおり位置インジケーター */}
+              {bookmarks.length > 0 && (
+                <div className="absolute right-2 top-2 bg-white rounded-lg shadow-md p-2 text-xs">
+                  <div className="font-medium text-gray-700 mb-1">しおり位置</div>
+                  <div className="space-y-1">
+                    {bookmarks.map((bookmark, index) => (
+                      <div 
+                        key={bookmark.id}
+                        className="flex items-center gap-1 cursor-pointer hover:bg-gray-100 p-1 rounded"
+                        onMouseEnter={() => setHoveredBookmark(bookmark.id)}
+                        onMouseLeave={() => setHoveredBookmark(null)}
+                      >
+                        <div 
+                          className={`w-2 h-2 rounded-full ${
+                            bookmark.color === 'yellow' ? 'bg-yellow-400' :
+                            bookmark.color === 'green' ? 'bg-green-400' :
+                            bookmark.color === 'blue' ? 'bg-blue-400' :
+                            bookmark.color === 'pink' ? 'bg-pink-400' :
+                            bookmark.color === 'orange' ? 'bg-orange-400' : 'bg-yellow-400'
+                          }`}
+                        />
+                        <span className="text-gray-600">#{index + 1}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <div 
                 className="text-gray-700 whitespace-pre-wrap text-sm"
                 dangerouslySetInnerHTML={{ 
