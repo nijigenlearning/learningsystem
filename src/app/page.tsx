@@ -105,6 +105,12 @@ export default function HomePage() {
   const handleStepClick = (material: Material, step: number) => {
     const status = getStepStatus(material, step);
     
+    // 一般画面では工程1、2、5の編集は不可
+    if (step === 1 || step === 2 || step === 5) {
+      alert('この工程は管理者画面でのみ編集可能です。');
+      return;
+    }
+    
     // 完了済みの場合は編集ボタンを表示するため、何もしない
     if (status === 'completed') return;
     
@@ -128,49 +134,50 @@ export default function HomePage() {
       return;
     }
     
-    // 各工程の編集画面に遷移
+    // 各工程の編集画面に遷移（工程1、2、5は除外）
     switch (step) {
-      case 1:
-        router.push(`/admin/materials/${material.id}/edit`);
-        break;
-      case 2:
-        router.push(`/materials/${material.id}/text`);
-        break;
       case 3:
         router.push(`/materials/${material.id}/steps`);
         break;
       case 4:
         router.push(`/materials/${material.id}/images`);
         break;
-      case 5:
-        router.push(`/materials/${material.id}/view`);
+      default:
+        alert('この工程は管理者画面でのみ編集可能です。');
         break;
     }
   };
 
-  // 編集ボタン用：必ず編集画面に遷移
+  // 編集ボタン用：必ず編集画面に遷移（工程1、2、5は除外）
   const handleEditStepClick = (material: Material, step: number) => {
+    // 一般画面では工程1、2、5の編集は不可
+    if (step === 1 || step === 2 || step === 5) {
+      alert('この工程は管理者画面でのみ編集可能です。');
+      return;
+    }
+    
     switch (step) {
-      case 1:
-        router.push(`/admin/materials/${material.id}/edit`);
-        break;
-      case 2:
-        router.push(`/materials/${material.id}/text`);
-        break;
       case 3:
         router.push(`/materials/${material.id}/steps`);
         break;
       case 4:
         router.push(`/materials/${material.id}/images`);
         break;
-      case 5:
-        router.push(`/materials/${material.id}/view`);
+      default:
+        alert('この工程は管理者画面でのみ編集可能です。');
         break;
     }
   };
 
   // 事業所選択の処理
   const handleOfficeChange = async (materialId: string, office: string) => {
+    // 既に加古川か千葉が選択されている場合は編集不可
+    const material = materials.find(m => m.id === materialId);
+    if (material && (material.office === '加古川' || material.office === '千葉')) {
+      alert('事業所は既に選択済みです。変更はできません。');
+      return;
+    }
+    
     try {
       const response = await fetch(`/api/materials/${materialId}`, {
         method: 'PATCH',
@@ -276,32 +283,39 @@ export default function HomePage() {
                       {[1, 2, 3, 4, 5].map((step) => {
                         const status = getStepStatus(material, step);
                         const isCompleted = status === 'completed';
+                        const canAccess = canAccessStep(material, step);
+                        const isDisabled = isCompleted || !canAccess;
                         
-                                                 const canAccess = canAccessStep(material, step);
-                         const isDisabled = isCompleted || !canAccess;
-                         
-                         return (
-                           <div key={step} className="flex-1 relative">
-                             <button
-                               onClick={() => handleStepClick(material, step)}
-                               className={`w-full h-10 rounded-full flex items-center justify-center text-base font-bold mx-1 transition-colors ${getStepColor(material, step)} ${!isDisabled ? 'hover:opacity-80 cursor-pointer' : 'cursor-not-allowed'}`}
-                               title={`${step}. ${getStepName(step)}`}
-                               style={{ minWidth: 0 }}
-                               disabled={isDisabled}
-                             >
-                               {step}
-                             </button>
-                             {isCompleted && (
-                               <button
-                                 onClick={() => handleEditStepClick(material, step)}
-                                 className="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 text-white text-xs rounded-full flex items-center justify-center hover:bg-blue-600"
-                                 title="編集"
-                               >
-                                 ✏️
-                               </button>
-                             )}
-                           </div>
-                         );
+                        // 一般画面では工程1、2、5は無効
+                        const isGeneralRestricted = step === 1 || step === 2 || step === 5;
+                        const finalDisabled = isDisabled || isGeneralRestricted;
+                        
+                        return (
+                          <div key={step} className="flex-1 relative">
+                            <button
+                              onClick={() => handleStepClick(material, step)}
+                              className={`w-full h-10 rounded-full flex items-center justify-center text-base font-bold mx-1 transition-colors ${
+                                isGeneralRestricted 
+                                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                                  : getStepColor(material, step)
+                              } ${!finalDisabled ? 'hover:opacity-80 cursor-pointer' : 'cursor-not-allowed'}`}
+                              title={isGeneralRestricted ? '管理者画面でのみ編集可能' : `${step}. ${getStepName(step)}`}
+                              style={{ minWidth: 0 }}
+                              disabled={finalDisabled}
+                            >
+                              {step}
+                            </button>
+                            {isCompleted && !isGeneralRestricted && (
+                              <button
+                                onClick={() => handleEditStepClick(material, step)}
+                                className="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 text-white text-xs rounded-full flex items-center justify-center hover:bg-blue-600"
+                                title="編集"
+                              >
+                                ✏️
+                              </button>
+                            )}
+                          </div>
+                        );
                       })}
                     </div>
                   </div>
@@ -321,15 +335,25 @@ export default function HomePage() {
                   {/* 実施事業所選択 */}
                   <div className="mb-4">
                     <div className="grid grid-cols-3 gap-2">
-                      {['加古川', '千葉', 'なし'].map((office) => (
-                        <button
-                          key={office}
-                          onClick={() => handleOfficeChange(material.id, office)}
-                          className={`px-4 py-2 text-sm rounded-md transition-colors ${getOfficeColor(office, (material.office || 'なし') === office)}`}
-                        >
-                          {office}
-                        </button>
-                      ))}
+                      {['加古川', '千葉', 'なし'].map((office) => {
+                        const isSelected = (material.office || 'なし') === office;
+                        const isDisabled = (material.office === '加古川' || material.office === '千葉') && !isSelected;
+                        
+                        return (
+                          <button
+                            key={office}
+                            onClick={() => handleOfficeChange(material.id, office)}
+                            disabled={isDisabled}
+                            className={`px-4 py-2 text-sm rounded-md transition-colors ${
+                              isDisabled 
+                                ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                                : getOfficeColor(office, isSelected)
+                            }`}
+                          >
+                            {office}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 </div>
