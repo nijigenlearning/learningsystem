@@ -358,6 +358,22 @@ export default function StepsEditPage() {
   const handleTextSelection = () => {
     const selection = window.getSelection();
     if (selection && selection.toString().trim()) {
+      // 選択後に少し待ってからモーダルを表示（コピー操作を妨げないように）
+      setTimeout(() => {
+        const currentSelection = window.getSelection();
+        if (currentSelection && currentSelection.toString().trim()) {
+          setSelectedText(currentSelection.toString().trim());
+          setShowBookmarkModal(true);
+        }
+      }, 500); // 500ms待機
+    }
+  };
+
+  // 右クリックメニューの処理
+  const handleContextMenu = (e: React.MouseEvent) => {
+    e.preventDefault();
+    const selection = window.getSelection();
+    if (selection && selection.toString().trim()) {
       setSelectedText(selection.toString().trim());
       setShowBookmarkModal(true);
     }
@@ -426,6 +442,19 @@ export default function StepsEditPage() {
     });
 
     return result;
+  };
+
+  // キーボードショートカットの処理
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    // Ctrl+B でしおりを追加
+    if (e.ctrlKey && e.key === 'b') {
+      e.preventDefault();
+      const selection = window.getSelection();
+      if (selection && selection.toString().trim()) {
+        setSelectedText(selection.toString().trim());
+        setShowBookmarkModal(true);
+      }
+    }
   };
 
   if (loading) {
@@ -605,10 +634,22 @@ export default function StepsEditPage() {
               </div>
             )}
 
+            {/* ヘルプテキスト */}
+            <div className="mb-4 p-2 bg-blue-50 rounded-lg text-xs text-blue-700">
+              <p className="mb-1"><strong>しおりの追加方法：</strong></p>
+              <ul className="space-y-1 text-xs">
+                <li>• テキストを選択して500ms待つ</li>
+                <li>• 右クリック → しおりを追加</li>
+                <li>• Ctrl+B（テキスト選択後）</li>
+              </ul>
+            </div>
+
             <div 
               className="bg-gray-50 rounded-lg p-4 overflow-y-auto cursor-text" 
               style={{ maxHeight: 'calc(100vh - 400px)' }}
               onMouseUp={handleTextSelection}
+              onContextMenu={handleContextMenu}
+              onKeyDown={handleKeyDown}
             >
               <div 
                 className="text-gray-700 whitespace-pre-wrap text-sm"
