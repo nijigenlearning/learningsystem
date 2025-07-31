@@ -381,18 +381,9 @@ export default function StepsEditPage() {
 
   // しおりボタンクリック時の処理
   const handleBookmarkButtonClick = () => {
+    console.log('しおりボタンがクリックされました');
     setShowBookmarkModal(true);
     setShowBookmarkButton(false);
-  };
-
-  // 右クリックメニューの処理
-  const handleContextMenu = (e: React.MouseEvent) => {
-    e.preventDefault();
-    const selection = window.getSelection();
-    if (selection && selection.toString().trim()) {
-      setSelectedText(selection.toString().trim());
-      setShowBookmarkModal(true);
-    }
   };
 
   // しおりを追加
@@ -461,19 +452,6 @@ export default function StepsEditPage() {
     });
 
     return result;
-  };
-
-  // キーボードショートカットの処理
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    // Ctrl+B でしおりを追加
-    if (e.ctrlKey && e.key === 'b') {
-      e.preventDefault();
-      const selection = window.getSelection();
-      if (selection && selection.toString().trim()) {
-        setSelectedText(selection.toString().trim());
-        setShowBookmarkModal(true);
-      }
-    }
   };
 
   if (loading) {
@@ -658,8 +636,6 @@ export default function StepsEditPage() {
               <p className="mb-1"><strong>しおりの追加方法：</strong></p>
               <ul className="space-y-1 text-xs">
                 <li>• テキストを選択 → 「📖 しおり追加」ボタンをクリック</li>
-                <li>• 右クリック → しおりを追加</li>
-                <li>• Ctrl+B（テキスト選択後）</li>
               </ul>
               <p className="mt-2 text-xs text-blue-600">
                 💡 しおり位置インジケーターで各しおりの位置を確認できます
@@ -670,8 +646,6 @@ export default function StepsEditPage() {
               className="bg-gray-50 rounded-lg p-4 overflow-y-auto cursor-text text-container relative" 
               style={{ maxHeight: 'calc(100vh - 400px)' }}
               onMouseUp={handleTextSelection}
-              onContextMenu={handleContextMenu}
-              onKeyDown={handleKeyDown}
             >
               {/* しおりボタン */}
               {showBookmarkButton && (
@@ -682,7 +656,12 @@ export default function StepsEditPage() {
                     top: bookmarkButtonPosition.y,
                     transform: 'translateX(-50%)'
                   }}
-                  onClick={handleBookmarkButtonClick}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    console.log('しおりボタンがクリックされました');
+                    handleBookmarkButtonClick();
+                  }}
                 >
                   📖 しおり追加
                 </div>
