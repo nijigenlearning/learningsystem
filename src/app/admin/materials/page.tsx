@@ -67,6 +67,7 @@ export default function AdminMaterialsPage() {
     current: 'bg-blue-200 text-blue-900',
     todo: 'bg-gray-200 text-gray-600 border border-gray-400',
     disabled: 'bg-gray-100 text-gray-400 border border-gray-300',
+    draft: 'bg-yellow-200 text-yellow-900',
   };
   
   // 工程にアクセス可能かチェック
@@ -98,8 +99,8 @@ export default function AdminMaterialsPage() {
     // 完了済みの場合は緑色
     if (status === 'completed') return STEP_COLORS.done;
     
-    // draftの場合は青色（現在の工程）
-    if (status === 'draft') return STEP_COLORS.current;
+    // draftの場合は黄色
+    if (status === 'draft') return STEP_COLORS.draft;
     
     // 現在の工程でpendingの場合は青色
     if (step === currentStep && status === 'pending') return STEP_COLORS.current;

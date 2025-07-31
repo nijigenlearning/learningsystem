@@ -67,6 +67,7 @@ export default function HomePage() {
     current: 'bg-blue-200 text-blue-900',
     todo: 'bg-gray-200 text-gray-600 border border-gray-400',
     disabled: 'bg-gray-100 text-gray-400 border border-gray-300',
+    draft: 'bg-yellow-200 text-yellow-900',
   };
   
   // 工程にアクセス可能かチェック
@@ -96,7 +97,7 @@ export default function HomePage() {
     }
     
     if (status === 'completed') return STEP_COLORS.done;
-    if (status === 'draft') return STEP_COLORS.current; // draftの場合は青色（現在の工程）
+    if (status === 'draft') return STEP_COLORS.draft; // draftの場合は黄色
     if (step === currentStep && status === 'pending') return STEP_COLORS.current; // 現在の工程でpendingの場合は青色
     return STEP_COLORS.todo; // pendingの場合は未着手
   };
