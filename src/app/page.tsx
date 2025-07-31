@@ -290,14 +290,17 @@ export default function HomePage() {
                         const isGeneralRestricted = step === 1 || step === 2 || step === 5;
                         const finalDisabled = isDisabled || isGeneralRestricted;
                         
+                        // 色分岐を取得（制限されていても色は表示）
+                        const stepColor = getStepColor(material, step);
+                        
                         return (
                           <div key={step} className="flex-1 relative">
                             <button
                               onClick={() => handleStepClick(material, step)}
                               className={`w-full h-10 rounded-full flex items-center justify-center text-base font-bold mx-1 transition-colors ${
                                 isGeneralRestricted 
-                                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-                                  : getStepColor(material, step)
+                                  ? `${stepColor} opacity-50 cursor-not-allowed` 
+                                  : stepColor
                               } ${!finalDisabled ? 'hover:opacity-80 cursor-pointer' : 'cursor-not-allowed'}`}
                               title={isGeneralRestricted ? '管理者画面でのみ編集可能' : `${step}. ${getStepName(step)}`}
                               style={{ minWidth: 0 }}
