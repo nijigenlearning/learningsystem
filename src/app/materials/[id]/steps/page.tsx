@@ -14,6 +14,15 @@ interface StepInput {
   isHeading: boolean;
 }
 
+interface Bookmark {
+  id: string;
+  start: number;
+  end: number;
+  text: string;
+  color: string;
+  note: string;
+}
+
 export default function StepsEditPage() {
   const params = useParams();
   const materialId = params?.id as string;
@@ -31,6 +40,11 @@ export default function StepsEditPage() {
   const [success, setSuccess] = useState('');
   const [editingNote, setEditingNote] = useState(false);
   const [noteText, setNoteText] = useState('');
+  const [bookmarks, setBookmarks] = useState<Bookmark[]>([]);
+  const [selectedText, setSelectedText] = useState('');
+  const [showBookmarkModal, setShowBookmarkModal] = useState(false);
+  const [bookmarkColor, setBookmarkColor] = useState('yellow');
+  const [bookmarkNote, setBookmarkNote] = useState('');
 
   useEffect(() => {
     fetchData();
@@ -320,35 +334,98 @@ export default function StepsEditPage() {
 
   const handleNoteSave = async () => {
     try {
-      const response = await fetch(`/api/materials/${materialId}`, {
-        method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          note: noteText
-        }),
-      });
+      const { error } = await supabase
+        .from('materials')
+        .update({ note: noteText })
+        .eq('id', materialId);
 
-      if (response.ok) {
-        setEditingNote(false);
-        setSuccess('備考を更新しました');
-        // 教材情報を再取得
-        const { data: materialData, error: materialError } = await supabase
-          .from('materials')
-          .select('*')
-          .eq('id', materialId)
-          .single();
-        if (!materialError && materialData) {
-          setMaterial(materialData);
-        }
-      } else {
-        const data = await response.json();
-        setError(data.error || '備考の更新に失敗しました');
+      if (error) {
+        console.error('備考保存エラー:', error);
+        alert('備考の保存に失敗しました');
+        return;
       }
-    } catch (err) {
-      setError('備考の更新に失敗しました');
+
+      setEditingNote(false);
+      setSuccess('備考を保存しました');
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (error) {
+      console.error('備考保存エラー:', error);
+      alert('備考の保存に失敗しました');
     }
+  };
+
+  // テキスト選択時の処理
+  const handleTextSelection = () => {
+    const selection = window.getSelection();
+    if (selection && selection.toString().trim()) {
+      setSelectedText(selection.toString().trim());
+      setShowBookmarkModal(true);
+    }
+  };
+
+  // しおりを追加
+  const addBookmark = () => {
+    if (!selectedText.trim()) return;
+
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0) return;
+
+    const range = selection.getRangeAt(0);
+    const container = range.startContainer;
+    const textNode = container.nodeType === Node.TEXT_NODE ? container : container.firstChild;
+    
+    if (!textNode || textNode.nodeType !== Node.TEXT_NODE) return;
+
+    const textContent = textNode.textContent || '';
+    const start = range.startOffset;
+    const end = range.endOffset;
+
+    const newBookmark: Bookmark = {
+      id: Date.now().toString(),
+      start,
+      end,
+      text: selectedText,
+      color: bookmarkColor,
+      note: bookmarkNote
+    };
+
+    setBookmarks([...bookmarks, newBookmark]);
+    setSelectedText('');
+    setShowBookmarkModal(false);
+    setBookmarkColor('yellow');
+    setBookmarkNote('');
+    selection.removeAllRanges();
+  };
+
+  // しおりを削除
+  const removeBookmark = (bookmarkId: string) => {
+    setBookmarks(bookmarks.filter(b => b.id !== bookmarkId));
+  };
+
+  // テキストにマーカーを適用
+  const applyBookmarks = (text: string) => {
+    if (bookmarks.length === 0) return text;
+
+    let result = text;
+    const sortedBookmarks = [...bookmarks].sort((a, b) => b.start - a.start);
+
+    sortedBookmarks.forEach(bookmark => {
+      const before = result.substring(0, bookmark.start);
+      const marked = result.substring(bookmark.start, bookmark.end);
+      const after = result.substring(bookmark.end);
+      
+      const markerClass = {
+        yellow: 'bg-yellow-200',
+        green: 'bg-green-200',
+        blue: 'bg-blue-200',
+        pink: 'bg-pink-200',
+        orange: 'bg-orange-200'
+      }[bookmark.color] || 'bg-yellow-200';
+
+      result = `${before}<mark class="${markerClass} cursor-pointer" title="${bookmark.note}" data-bookmark-id="${bookmark.id}">${marked}</mark>${after}`;
+    });
+
+    return result;
   };
 
   if (loading) {
@@ -476,11 +553,69 @@ export default function StepsEditPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
           {/* 左列：工程2で登録したテキスト全文 */}
           <div className="bg-white rounded-lg shadow-md p-6 border border-gray-300 sticky top-6">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">テキスト全文</h3>
-            <div className="bg-gray-50 rounded-lg p-4 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 400px)' }}>
-              <p className="text-gray-700 whitespace-pre-wrap text-sm">
-                {material.transcript || 'テキストが登録されていません'}
-              </p>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-gray-900">テキスト全文</h3>
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={() => setBookmarks([])}
+                  variant="outline"
+                  size="sm"
+                  className="text-red-600 border-red-300 hover:bg-red-50"
+                >
+                  マーカー全削除
+                </Button>
+              </div>
+            </div>
+            
+            {/* しおり一覧 */}
+            {bookmarks.length > 0 && (
+              <div className="mb-4 p-3 bg-gray-50 rounded-lg">
+                <h4 className="text-sm font-medium text-gray-700 mb-2">しおり一覧</h4>
+                <div className="space-y-2 max-h-32 overflow-y-auto">
+                  {bookmarks.map((bookmark) => (
+                    <div key={bookmark.id} className="flex items-center gap-2 text-xs">
+                      <div 
+                        className={`w-3 h-3 rounded-full ${
+                          bookmark.color === 'yellow' ? 'bg-yellow-400' :
+                          bookmark.color === 'green' ? 'bg-green-400' :
+                          bookmark.color === 'blue' ? 'bg-blue-400' :
+                          bookmark.color === 'pink' ? 'bg-pink-400' :
+                          bookmark.color === 'orange' ? 'bg-orange-400' : 'bg-yellow-400'
+                        }`}
+                      />
+                      <span className="flex-1 truncate" title={bookmark.text}>
+                        {bookmark.text.length > 30 ? bookmark.text.substring(0, 30) + '...' : bookmark.text}
+                      </span>
+                      {bookmark.note && (
+                        <span className="text-gray-500" title={bookmark.note}>
+                          📝
+                        </span>
+                      )}
+                      <Button
+                        onClick={() => removeBookmark(bookmark.id)}
+                        variant="outline"
+                        size="sm"
+                        className="text-red-600 border-red-300 hover:bg-red-50 p-1 h-6"
+                      >
+                        ×
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div 
+              className="bg-gray-50 rounded-lg p-4 overflow-y-auto cursor-text" 
+              style={{ maxHeight: 'calc(100vh - 400px)' }}
+              onMouseUp={handleTextSelection}
+            >
+              <div 
+                className="text-gray-700 whitespace-pre-wrap text-sm"
+                dangerouslySetInnerHTML={{ 
+                  __html: applyBookmarks(material.transcript || 'テキストが登録されていません') 
+                }}
+              />
             </div>
           </div>
 
@@ -580,6 +715,82 @@ export default function StepsEditPage() {
           </div>
         </div>
       </div>
+
+      {/* しおり追加モーダル */}
+      {showBookmarkModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">しおりを追加</h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  選択したテキスト
+                </label>
+                <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded border">
+                  {selectedText}
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  マーカー色
+                </label>
+                <div className="flex gap-2">
+                  {['yellow', 'green', 'blue', 'pink', 'orange'].map((color) => (
+                    <button
+                      key={color}
+                      onClick={() => setBookmarkColor(color)}
+                      className={`w-8 h-8 rounded-full border-2 ${
+                        bookmarkColor === color ? 'border-gray-900' : 'border-gray-300'
+                      } ${
+                        color === 'yellow' ? 'bg-yellow-400' :
+                        color === 'green' ? 'bg-green-400' :
+                        color === 'blue' ? 'bg-blue-400' :
+                        color === 'pink' ? 'bg-pink-400' :
+                        color === 'orange' ? 'bg-orange-400' : 'bg-yellow-400'
+                      }`}
+                    />
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  メモ（任意）
+                </label>
+                <Textarea
+                  value={bookmarkNote}
+                  onChange={(e) => setBookmarkNote(e.target.value)}
+                  placeholder="メモを入力してください"
+                  rows={3}
+                  className="w-full"
+                />
+              </div>
+
+              <div className="flex gap-2 justify-end">
+                <Button
+                  onClick={() => {
+                    setShowBookmarkModal(false);
+                    setSelectedText('');
+                    setBookmarkColor('yellow');
+                    setBookmarkNote('');
+                  }}
+                  variant="outline"
+                >
+                  キャンセル
+                </Button>
+                <Button
+                  onClick={addBookmark}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  しおりを追加
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 } 
