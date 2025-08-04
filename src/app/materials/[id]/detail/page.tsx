@@ -17,6 +17,10 @@ export default function MaterialDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [deleting, setDeleting] = useState(false);
+  const [bookmarkNote, setBookmarkNote] = useState('');
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleText, setTitleText] = useState('');
+  const [savingTitle, setSavingTitle] = useState(false);
 
   // 一般画面からアクセスされたかどうかを判定
   const isGeneralView = typeof window !== 'undefined' && !window.location.pathname.includes('/admin');
@@ -152,6 +156,59 @@ export default function MaterialDetailPage() {
     }
   };
 
+  // タイトル編集開始
+  const startEditingTitle = () => {
+    setTitleText(material?.title || '');
+    setEditingTitle(true);
+  };
+
+  // タイトル編集キャンセル
+  const cancelEditingTitle = () => {
+    setEditingTitle(false);
+    setTitleText('');
+  };
+
+  // タイトル保存
+  const saveTitle = async () => {
+    if (!titleText.trim()) {
+      alert('タイトルを入力してください');
+      return;
+    }
+
+    setSavingTitle(true);
+    try {
+      const { error } = await supabase
+        .from('materials')
+        .update({ title: titleText.trim() })
+        .eq('id', materialId);
+
+      if (error) {
+        console.error('タイトル更新エラー:', error);
+        alert('タイトルの更新に失敗しました');
+        return;
+      }
+
+      // 教材情報を再取得
+      const { data: materialData, error: materialError } = await supabase
+        .from('materials')
+        .select('*')
+        .eq('id', materialId)
+        .single();
+
+      if (!materialError && materialData) {
+        setMaterial(materialData);
+      }
+
+      setEditingTitle(false);
+      setTitleText('');
+      alert('タイトルを更新しました');
+    } catch (error) {
+      console.error('タイトル更新エラー:', error);
+      alert('タイトルの更新に失敗しました');
+    } finally {
+      setSavingTitle(false);
+    }
+  };
 
 
   if (loading) {
@@ -181,7 +238,47 @@ export default function MaterialDetailPage() {
         {/* ヘッダー */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
-            <h1 className="text-3xl font-bold text-gray-900">{material.title}</h1>
+            <div className="flex-1">
+              {editingTitle ? (
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={titleText}
+                    onChange={(e) => setTitleText(e.target.value)}
+                    className="text-3xl font-bold text-gray-900 bg-white border border-gray-300 rounded px-2 py-1 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="タイトルを入力"
+                    autoFocus
+                  />
+                  <Button
+                    onClick={saveTitle}
+                    disabled={savingTitle}
+                    size="sm"
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    {savingTitle ? '保存中...' : '保存'}
+                  </Button>
+                  <Button
+                    onClick={cancelEditingTitle}
+                    variant="outline"
+                    size="sm"
+                  >
+                    キャンセル
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <h1 className="text-3xl font-bold text-gray-900">{material.title}</h1>
+                  <Button
+                    onClick={startEditingTitle}
+                    variant="outline"
+                    size="sm"
+                    className="text-gray-600 hover:text-gray-900"
+                  >
+                    ✏️ 編集
+                  </Button>
+                </div>
+              )}
+            </div>
             {!isGeneralView && (
               <Button
                 onClick={handleDelete}
