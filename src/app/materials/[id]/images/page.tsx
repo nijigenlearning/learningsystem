@@ -135,6 +135,18 @@ export default function ImagesEditPage() {
           console.log('🔍 教材存在確認結果:', materialCheck);
         }
         
+        // recipe_stepsテーブルの全データを確認（デバッグ用）
+        const { data: allSteps, error: allStepsError } = await supabase
+          .from('recipe_steps')
+          .select('*')
+          .limit(10);
+        
+        if (allStepsError) {
+          console.error('全手順データ取得エラー:', allStepsError);
+        } else {
+          console.log('🔍 recipe_stepsテーブルの全データ（最新10件）:', allSteps);
+        }
+        
         // 手順データが存在しない場合のエラーメッセージを設定
         setError('手順データが存在しません。工程3（手順作成）で手順を作成してから、このページにアクセスしてください。');
         setLoading(false);
