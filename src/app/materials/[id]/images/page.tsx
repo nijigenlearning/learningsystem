@@ -17,7 +17,7 @@ interface StepInput {
 }
 
 interface StepImage {
-  stepId: number;
+  stepId: string; // UUID文字列として修正
   images: MaterialImage[];
 }
 
@@ -30,7 +30,7 @@ export default function ImagesEditPage() {
   
   const [material, setMaterial] = useState<Material | null>(null);
   const [steps, setSteps] = useState<RecipeStep[]>([]);
-  const [stepImages, setStepImages] = useState<{ [key: number]: MaterialImage[] }>({});
+  const [stepImages, setStepImages] = useState<{ [key: string]: MaterialImage[] }>({});
   const [newSteps, setNewSteps] = useState<StepInput[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -81,6 +81,21 @@ export default function ImagesEditPage() {
       
       // 手順データを取得
       console.log('🔵 recipe_stepsテーブルから手順データを取得中...');
+      console.log('🔵 クエリ条件:', { material_id: materialId });
+      
+      // まず、recipe_stepsテーブルにデータが存在するか確認
+      const { count: stepsCount, error: countError } = await supabase
+        .from('recipe_steps')
+        .select('*', { count: 'exact', head: true })
+        .eq('material_id', materialId);
+
+      if (countError) {
+        console.error('手順データ件数取得エラー:', countError);
+      } else {
+        console.log('🔵 recipe_stepsテーブルの総件数:', stepsCount);
+      }
+
+      // 実際の手順データを取得
       const { data: stepsData, error: stepsError } = await supabase
         .from('recipe_steps')
         .select('*')
@@ -89,11 +104,37 @@ export default function ImagesEditPage() {
 
       if (stepsError) {
         console.error('手順データ取得エラー:', stepsError);
+        console.error('エラーの詳細:', {
+          message: stepsError.message,
+          details: stepsError.details,
+          hint: stepsError.hint,
+          code: stepsError.code
+        });
         return;
       }
 
       console.log('🔵 取得された手順データ:', stepsData);
       console.log('🔵 手順データの件数:', stepsData?.length || 0);
+      
+      // データが空の場合、material_idの形式を確認
+      if (!stepsData || stepsData.length === 0) {
+        console.log('⚠️ 手順データが空です。以下を確認してください:');
+        console.log('🔍 material_idの形式:', materialId);
+        console.log('🔍 material_idの型:', typeof materialId);
+        console.log('🔍 material_idの長さ:', materialId?.length);
+        
+        // materialsテーブルで該当するIDが存在するか確認
+        const { data: materialCheck, error: materialCheckError } = await supabase
+          .from('materials')
+          .select('id, title')
+          .eq('id', materialId);
+        
+        if (materialCheckError) {
+          console.error('教材存在確認エラー:', materialCheckError);
+        } else {
+          console.log('🔍 教材存在確認結果:', materialCheck);
+        }
+      }
 
       if (stepsData && stepsData.length > 0) {
         // 既存の手順を入力欄に設定
@@ -139,7 +180,7 @@ export default function ImagesEditPage() {
 
         // 各手順の画像を取得
         console.log('🔵 画像取得開始:');
-        const stepImagesData: { [key: number]: MaterialImage[] } = {};
+        const stepImagesData: { [key: string]: MaterialImage[] } = {};
         
         for (const step of stepsData) {
           const shouldFetch = !step.heading && step.step_number < 9999;
@@ -147,6 +188,7 @@ export default function ImagesEditPage() {
             content: step.content,
             heading: step.heading,
             step_number: step.step_number,
+            step_id: step.id,
             shouldFetch
           });
           
@@ -163,9 +205,9 @@ export default function ImagesEditPage() {
               continue;
             }
 
-            // step_numberをキーとして使用
-            stepImagesData[step.step_number] = images || [];
-            console.log(`手順${step.step_number}の画像:`, images || []);
+            // step.id（UUID）をキーとして使用
+            stepImagesData[step.id] = images || [];
+            console.log(`手順${step.step_number}（ID: ${step.id}）の画像:`, images || []);
           }
         }
 
@@ -306,7 +348,7 @@ export default function ImagesEditPage() {
     }
   };
 
-  const handleImageUpload = async (file: File, stepId: number) => {
+  const handleImageUpload = async (file: File, stepId: string) => {
     try {
       console.log('🔵 画像アップロード開始:', { 
         file: { name: file.name, size: file.size, type: file.type }, 
@@ -333,7 +375,7 @@ export default function ImagesEditPage() {
         .from('material_images')
         .select('order')
         .eq('material_id', materialId)
-        .eq('step_id', stepId) // step_idを数値として検索
+        .eq('step_id', stepId) // step_idをUUID文字列として検索
         .order('order', { ascending: false })
         .limit(1);
 
@@ -436,7 +478,7 @@ export default function ImagesEditPage() {
         .from('material_images')
         .insert({
           material_id: materialId,
-          step_id: stepId, // step_idを数値として保存
+          step_id: stepId, // step_idをUUID文字列として保存
           image_url: urlData.publicUrl,
           file_name: file.name,
           file_size: file.size,
@@ -491,7 +533,7 @@ export default function ImagesEditPage() {
     }
   };
 
-  const handleImageDelete = async (imageId: string, stepId: number) => {
+  const handleImageDelete = async (imageId: string, stepId: string) => {
     try {
       // まず画像情報を取得
       const { data: imageData, error: fetchError } = await supabase
@@ -542,9 +584,9 @@ export default function ImagesEditPage() {
       // 状態を更新
       setStepImages(prev => {
         const updated = { ...prev };
-        const stepIndex = updated[stepId];
-        if (stepIndex) {
-          updated[stepId] = stepIndex.filter(img => img.id !== imageId);
+        const stepImages = updated[stepId];
+        if (stepImages) {
+          updated[stepId] = stepImages.filter(img => img.id !== imageId);
         }
         return updated;
       });
@@ -955,7 +997,7 @@ export default function ImagesEditPage() {
                   stepNumberMapping: Array.from(stepNumberMapping.entries())
                 });
                 
-                const images = stepImages[stepNumber] || [];
+                const images = step.id ? (stepImages[step.id] || []) : [];
                 
                 console.log(`🔵 ステップ${index}の画像検索結果:`, {
                   stepNumber,
@@ -990,8 +1032,13 @@ export default function ImagesEditPage() {
                             onChange={(e) => {
                               const file = e.target.files?.[0];
                               if (file) {
-                                console.log(`🔵 ファイル選択: ステップ${index} (stepNumber: ${stepNumber})`, file);
-                                handleImageUpload(file, stepNumber);
+                                console.log(`🔵 ファイル選択: ステップ${index} (stepNumber: ${stepNumber}, stepId: ${step.id})`, file);
+                                if (step.id) {
+                                  handleImageUpload(file, step.id);
+                                } else {
+                                  console.error('ステップIDが存在しません:', step);
+                                  setError('ステップIDが存在しません。手順を保存してから画像をアップロードしてください。');
+                                }
                               }
                             }}
                             className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
@@ -1011,7 +1058,14 @@ export default function ImagesEditPage() {
                                     className="w-full h-24 object-cover rounded border"
                                   />
                                   <button
-                                    onClick={() => handleImageDelete(image.id, stepNumber)}
+                                    onClick={() => {
+                                      if (step.id) {
+                                        handleImageDelete(image.id, step.id);
+                                      } else {
+                                        console.error('ステップIDが存在しません:', step);
+                                        setError('ステップIDが存在しません。');
+                                      }
+                                    }}
                                     className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600"
                                   >
                                     <X className="w-3 h-3" />
