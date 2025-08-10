@@ -222,11 +222,13 @@ export default function ImagesEditPage() {
     }
   };
 
-  const handleImageUpload = async (stepId: number, file: File) => {
+  const handleImageUpload = async (file: File, stepId: number) => {
     try {
-      // ファイルサイズチェック（5MB制限）
+      console.log('画像アップロード開始:', { file, stepId });
+
+      // ファイルサイズチェック
       if (file.size > 5 * 1024 * 1024) {
-        setError('ファイルサイズは5MB以下にしてください');
+        setError('ファイルサイズが大きすぎます。5MB以下のファイルを選択してください。');
         return;
       }
 
@@ -236,153 +238,75 @@ export default function ImagesEditPage() {
         return;
       }
 
-      console.log('画像アップロード開始:', {
-        materialId,
-        stepId,
-        stepId_type: typeof stepId,
-        stepId_value: stepId,
-        fileName: file.name,
-        fileSize: file.size,
-        fileType: file.type
-      });
+      // 既存の画像のorder値を確認して次の順序番号を取得
+      const { data: existingImages, error: fetchError } = await supabase
+        .from('material_images')
+        .select('order')
+        .eq('material_id', materialId)
+        .eq('step_id', stepId) // step_idを数値として検索
+        .order('order', { ascending: false })
+        .limit(1);
 
-      // 環境変数の確認
-      console.log('環境変数確認:', {
-        hasSupabaseUrl: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
-        hasSupabaseAnonKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
-        supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL
-      });
-
-      // Supabase Storageバケットの存在確認
-      try {
-        console.log('Supabaseクライアント設定確認:', {
-          url: process.env.NEXT_PUBLIC_SUPABASE_URL,
-          hasAnonKey: !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
-        });
-        
-        const { data: bucketList, error: bucketError } = await supabase.storage.listBuckets();
-        console.log('バケット一覧取得結果:', { bucketList, bucketError });
-        
-        if (bucketError) {
-          console.error('バケット一覧取得エラー:', bucketError);
-          setError(`バケット一覧の取得に失敗しました: ${bucketError.message}`);
-          return;
-        }
-        
-        if (!bucketList || bucketList.length === 0) {
-          console.warn('バケットが存在しません');
-          console.log('利用可能なバケット名:', bucketList.map(b => b.name));
-          
-          // バケットが存在しない場合は、デフォルトのバケット名を使用
-          const defaultBucketName = 'material-images';
-          console.log('デフォルトバケット名を使用:', defaultBucketName);
-          
-          // バケットの存在を確認せずにアップロードを試行
-          const fileExt = file.name.split('.').pop();
-          const fileName = `${materialId}/${stepId}/${Date.now()}.${fileExt}`;
-          
-          console.log('アップロード先ファイル名:', fileName);
-
-          const { data: uploadData, error: uploadError } = await supabase.storage
-            .from(defaultBucketName)
-            .upload(fileName, file);
-
-          if (uploadError) {
-            console.error('Supabase Storage アップロードエラー詳細:', {
-              error: uploadError,
-              message: uploadError.message
-            });
-            
-            setError(`画像のアップロードに失敗しました: ${uploadError.message || '不明なエラー'}`);
-            return;
-          }
-
-          console.log('アップロード成功:', uploadData);
-
-          // 公開URLを取得
-          const { data: urlData } = supabase.storage
-            .from(defaultBucketName)
-            .getPublicUrl(fileName);
-
-          console.log('公開URL:', urlData.publicUrl);
-
-          // material_imagesテーブルに保存
-          const { data: imageData, error: dbError } = await supabase
-            .from('material_images')
-            .insert({
-              material_id: materialId,
-              step_id: stepId,
-              image_url: urlData.publicUrl,
-              file_name: file.name,
-              file_size: file.size,
-              mime_type: file.type,
-              order: 1
-            })
-            .select()
-            .single();
-
-          if (dbError) {
-            console.error('データベース保存エラー:', dbError);
-            setError('画像情報の保存に失敗しました');
-            return;
-          }
-
-          console.log('データベース保存成功:', imageData);
-
-          // ステップ画像を更新
-          setStepImages(prev => {
-            const existingStep = prev.find(s => s.stepId === stepId);
-            if (existingStep) {
-              return prev.map(s => 
-                s.stepId === stepId 
-                  ? { ...s, images: [...s.images, imageData] }
-                  : s
-              );
-            } else {
-              return [...prev, { stepId, images: [imageData] }];
-            }
-          });
-
-          setSuccess('画像がアップロードされました');
-          return;
-        }
-        
-        console.log('利用可能なバケット名:', bucketList.map(b => b.name));
-        
-        // material-imagesまたはmaterial_imagesバケットを探す
-        const materialImagesBucket = bucketList.find(bucket => 
-          bucket.name === 'material-images' || 
-          bucket.name === 'material_images' ||
-          bucket.name.includes('material')
-        );
-        console.log('material-imagesバケットの検索結果:', materialImagesBucket);
-        
-        if (!materialImagesBucket) {
-          console.warn('material-imagesバケットが見つかりません');
-          console.log('利用可能なバケット名:', bucketList.map(b => b.name));
-          setError(`ストレージバケット「material-images」が設定されていません。利用可能なバケット: ${bucketList.map(b => b.name).join(', ')}。管理者に連絡してください。`);
-          return;
-        }
-        
-        console.log('material-imagesバケット確認完了:', materialImagesBucket);
-        
-        // 実際のバケット名を使用
-        const actualBucketName = materialImagesBucket.name;
-        console.log('使用するバケット名:', actualBucketName);
-      } catch (bucketCheckError) {
-        console.error('バケット確認エラー:', bucketCheckError);
-        setError(`バケット確認中にエラーが発生しました: ${bucketCheckError instanceof Error ? bucketCheckError.message : '不明なエラー'}`);
+      if (fetchError) {
+        console.error('既存画像のorder取得エラー:', fetchError);
+        setError('既存画像の情報取得に失敗しました');
         return;
       }
 
-      // Supabase Storageにアップロード
+      // 次のorder値を計算（既存画像がない場合は1、ある場合は最大値+1）
+      const nextOrder = existingImages && existingImages.length > 0 
+        ? Math.max(...existingImages.map(img => img.order)) + 1 
+        : 1;
+
+      console.log('次のorder値:', { existingImages, nextOrder });
+
+      // 環境変数確認
+      console.log('環境変数確認:', {
+        NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
+        NEXT_PUBLIC_SUPABASE_ANON_KEY: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? '設定済み' : '未設定'
+      });
+
+      // Supabaseクライアント設定確認
+      console.log('Supabaseクライアント設定確認:', {
+        supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL,
+        supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ? '設定済み' : '未設定'
+      });
+
+      // バケット一覧を取得
+      const { data: buckets, error: bucketsError } = await supabase.storage.listBuckets();
+      console.log('バケット一覧取得結果:', { buckets, error: bucketsError });
+
+      if (bucketsError) {
+        console.error('バケット一覧取得エラー:', bucketsError);
+        setError('ストレージバケットの確認に失敗しました');
+        return;
+      }
+
+      // 利用可能なバケット名を取得
+      const availableBucketNames = buckets?.map(bucket => bucket.name) || [];
+      console.log('利用可能なバケット名:', availableBucketNames);
+
+      // デフォルトバケット名を設定
+      let defaultBucketName = 'material-images';
+      
+      if (availableBucketNames.length === 0) {
+        console.log('バケットが存在しません');
+        setError('ストレージバケットが設定されていません。管理者に連絡してください。');
+        return;
+      } else if (!availableBucketNames.includes(defaultBucketName)) {
+        console.log('デフォルトバケット名を使用:', defaultBucketName);
+        // デフォルトバケットが存在しない場合は、最初の利用可能なバケットを使用
+        defaultBucketName = availableBucketNames[0];
+      }
+
+      // ファイル名を生成
       const fileExt = file.name.split('.').pop();
       const fileName = `${materialId}/${stepId}/${Date.now()}.${fileExt}`;
       
       console.log('アップロード先ファイル名:', fileName);
 
       const { data: uploadData, error: uploadError } = await supabase.storage
-        .from('material-images') // 実際のバケット名を使用
+        .from(defaultBucketName)
         .upload(fileName, file);
 
       if (uploadError) {
@@ -391,16 +315,7 @@ export default function ImagesEditPage() {
           message: uploadError.message
         });
         
-        // エラーの種類に応じてメッセージを変更
-        if (uploadError.message?.includes('bucket') || uploadError.message?.includes('not found')) {
-          setError('ストレージバケット「material-images」が設定されていません。管理者に連絡してください。');
-        } else if (uploadError.message?.includes('policy') || uploadError.message?.includes('permission')) {
-          setError('ストレージの権限設定に問題があります。管理者に連絡してください。');
-        } else if (uploadError.message?.includes('file size')) {
-          setError('ファイルサイズが大きすぎます。5MB以下のファイルを選択してください。');
-        } else {
-          setError(`画像のアップロードに失敗しました: ${uploadError.message || '不明なエラー'}`);
-        }
+        setError(`画像のアップロードに失敗しました: ${uploadError.message || '不明なエラー'}`);
         return;
       }
 
@@ -408,13 +323,13 @@ export default function ImagesEditPage() {
 
       // 公開URLを取得
       const { data: urlData } = supabase.storage
-        .from('material-images') // 実際のバケット名を使用
+        .from(defaultBucketName)
         .getPublicUrl(fileName);
 
       console.log('公開URL:', urlData.publicUrl);
 
       // material_imagesテーブルに保存
-      console.log('DB挿入前のデータ確認（メイン処理）:', {
+      console.log('DB挿入前のデータ確認:', {
         material_id: materialId,
         step_id: stepId,
         step_id_type: typeof stepId,
@@ -422,32 +337,32 @@ export default function ImagesEditPage() {
         file_name: file.name,
         file_size: file.size,
         mime_type: file.type,
-        order: 1
+        order: nextOrder
       });
 
       const { data: imageData, error: dbError } = await supabase
         .from('material_images')
         .insert({
           material_id: materialId,
-          step_id: stepId.toString(), // step_idを文字列に変換
+          step_id: stepId, // step_idを数値として保存
           image_url: urlData.publicUrl,
           file_name: file.name,
           file_size: file.size,
           mime_type: file.type,
-          order: 1
+          order: nextOrder
         })
         .select()
         .single();
 
       if (dbError) {
-        console.error('データベース保存エラー詳細:', {
+        console.error('DB保存エラー詳細:', {
           error: dbError,
           message: dbError.message,
           details: dbError.details,
           hint: dbError.hint,
           code: dbError.code
         });
-        
+
         // 409エラーの場合は詳細な情報を表示
         if (dbError.code === '409') {
           setError(`画像情報の保存に失敗しました（409エラー）: ${dbError.message || '重複または制約違反'}`);
@@ -459,16 +374,18 @@ export default function ImagesEditPage() {
 
       console.log('データベース保存成功:', imageData);
 
-      // 状態を更新
+      // ステップ画像を更新
       setStepImages(prev => {
-        const updated = [...prev];
-        const stepIndex = updated.findIndex(s => s.stepId === stepId);
-        if (stepIndex >= 0) {
-          updated[stepIndex].images.push(imageData);
+        const existingStep = prev.find(s => s.stepId === stepId);
+        if (existingStep) {
+          return prev.map(s => 
+            s.stepId === stepId 
+              ? { ...s, images: [...s.images, imageData] }
+              : s
+          );
         } else {
-          updated.push({ stepId, images: [imageData] });
+          return [...prev, { stepId, images: [imageData] }];
         }
-        return updated;
       });
 
       setSuccess('画像がアップロードされました');
@@ -935,7 +852,7 @@ export default function ImagesEditPage() {
                             onChange={(e) => {
                               const file = e.target.files?.[0];
                               if (file) {
-                                handleImageUpload(currentStepNumber, file);
+                                handleImageUpload(file, currentStepNumber);
                               }
                             }}
                             className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"

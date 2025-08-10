@@ -51,18 +51,31 @@ export default function MaterialViewPage() {
       if (response.ok) {
         const stepsData = await response.json();
         console.log('手順データ:', stepsData);
+        console.log('手順データの詳細:', stepsData.map((step: RecipeStep) => ({
+          id: step.id,
+          step_number: step.step_number,
+          step_number_type: typeof step.step_number,
+          content: step.content
+        })));
         setSteps(stepsData);
       } else {
         console.error('手順取得エラー:', response.statusText);
         setError('手順の取得に失敗しました');
       }
 
-      // 画像を取得
+      // 画像を取得（step_idでグループ化してorder順にソート）
       const { data: imagesData, error: imagesError } = await supabase
         .from('material_images')
         .select('*')
         .eq('material_id', materialId)
+        .order('step_id', { ascending: true })
         .order('order', { ascending: true });
+
+      console.log('データベースクエリ結果:', {
+        materialId,
+        imagesCount: imagesData?.length || 0,
+        rawImages: imagesData
+      });
 
       if (imagesError) {
         console.error('画像取得エラー:', imagesError);
@@ -71,6 +84,13 @@ export default function MaterialViewPage() {
       }
 
       console.log('画像データ:', imagesData);
+      console.log('画像データの詳細:', imagesData?.map(img => ({
+        id: img.id,
+        step_id: img.step_id,
+        step_id_type: typeof img.step_id,
+        order: img.order,
+        file_name: img.file_name
+      })));
       setStepImages(imagesData || []);
     } catch {
       setError('データの取得に失敗しました');
@@ -86,19 +106,41 @@ export default function MaterialViewPage() {
   // 手順と画像を組み合わせる
   const stepsWithImages: StepWithImages[] = steps.map(step => {
     const filteredImages = stepImages.filter(img => {
+      // step_idとstep_numberを数値として比較（型の違いに対応）
+      // データベースに文字列として保存されている可能性もあるため、両方の型に対応
+      const imgStepId = typeof img.step_id === 'string' ? parseInt(img.step_id, 10) : Number(img.step_id);
+      const stepNumber = Number(step.step_number);
+      
+      // NaNチェック
+      if (isNaN(imgStepId) || isNaN(stepNumber)) {
+        console.warn('無効なstep_idまたはstep_number:', {
+          imgStepId: img.step_id,
+          imgStepIdParsed: imgStepId,
+          stepNumber: step.step_number,
+          stepNumberParsed: stepNumber
+        });
+        return false;
+      }
+      
       console.log('画像フィルタリング:', {
         imgStepId: img.step_id,
         imgStepIdType: typeof img.step_id,
+        imgStepIdNumber: imgStepId,
         stepNumber: step.step_number,
         stepNumberType: typeof step.step_number,
-        isMatch: img.step_id === step.step_number
+        stepNumberNumber: stepNumber,
+        isMatch: imgStepId === stepNumber
       });
-      return img.step_id === step.step_number;
+      
+      return imgStepId === stepNumber;
     });
+    
+    // 各ステップ内で画像をorder順にソート
+    const sortedImages = filteredImages.sort((a, b) => a.order - b.order);
     
     return {
       step,
-      images: filteredImages
+      images: sortedImages
     };
   });
 
@@ -106,6 +148,20 @@ export default function MaterialViewPage() {
     steps: steps,
     stepImages: stepImages,
     stepsWithImages: stepsWithImages
+  });
+  
+  // 各ステップの画像の詳細をログ出力
+  stepsWithImages.forEach((stepWithImages, index) => {
+    console.log(`ステップ${index + 1} (step_number: ${stepWithImages.step.step_number}) の画像:`, {
+      stepId: stepWithImages.step.step_number,
+      imagesCount: stepWithImages.images.length,
+      images: stepWithImages.images.map(img => ({
+        id: img.id,
+        step_id: img.step_id,
+        order: img.order,
+        file_name: img.file_name
+      }))
+    });
   });
 
   // 完成見本画像のデバッグ情報
