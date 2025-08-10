@@ -43,6 +43,7 @@ export default function ImagesEditPage() {
   const [learningNote, setLearningNote] = useState('');
   const [sampleImageUrl, setSampleImageUrl] = useState('');
   const [showStepEditing, setShowStepEditing] = useState(false);
+  const [stepNumberMapping, setStepNumberMapping] = useState<Map<number, number>>(new Map());
 
   useEffect(() => {
     fetchData();
@@ -91,6 +92,18 @@ export default function ImagesEditPage() {
           }));
           console.log('変換後の入力データ:', existingStepsInput);
           setNewSteps(existingStepsInput);
+          
+          // UI step index と database step_number のマッピングを作成
+          const mapping = new Map<number, number>();
+          let uiIndex = 0;
+          stepsData.forEach((step: RecipeStep) => {
+            if (!step.heading) { // 小見出しでない場合のみマッピングに追加
+              mapping.set(uiIndex, step.step_number);
+            }
+            uiIndex++;
+          });
+          setStepNumberMapping(mapping);
+          console.log('ステップ番号マッピング:', mapping);
         } else {
           console.log('既存の手順がありません');
         }
@@ -194,6 +207,18 @@ export default function ImagesEditPage() {
             setSuccess('手順が一時保存されました');
             // 手順一覧を再取得
             await fetchData();
+            
+            // 新しいマッピングを作成
+            const newMapping = new Map<number, number>();
+            let uiIndex = 0;
+            stepsToSave.forEach((step) => {
+              if (!step.heading) { // 小見出しでない場合のみマッピングに追加
+                newMapping.set(uiIndex, step.step_number);
+              }
+              uiIndex++;
+            });
+            setStepNumberMapping(newMapping);
+            console.log('新しいステップ番号マッピング:', newMapping);
           } else {
             const data = await materialResponse.json();
             console.error('教材更新エラー:', data);
@@ -822,15 +847,16 @@ export default function ImagesEditPage() {
             </div>
             <div className="space-y-6 max-h-96 overflow-y-auto">
               {newSteps.map((step, index) => {
-                // 既存の手順データから正しいstep_numberを取得
-                const existingStep = steps.find(s => s.content === step.content && s.heading === (step.isHeading ? step.content : null));
-                const stepNumber = existingStep ? existingStep.step_number : index + 1;
+                // マッピングから正しいstep_numberを取得
+                const stepNumber = stepNumberMapping.get(index) || (index + 1);
                 
-                // 通し番号を計算（小見出しを除く）
-                const currentStepNumber = newSteps
-                  .slice(0, index + 1)
-                  .filter((s) => !s.isHeading)
-                  .length;
+                console.log(`ステップ${index}の詳細:`, {
+                  content: step.content,
+                  isHeading: step.isHeading,
+                  mappedStepNumber: stepNumberMapping.get(index),
+                  fallbackStepNumber: index + 1,
+                  finalStepNumber: stepNumber
+                });
                 
                 const stepImageData = stepImages.find(s => s.stepId === stepNumber);
                 const images = stepImageData?.images || [];
