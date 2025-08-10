@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { supabase } from '@/lib/supabaseClient';
 import { Material, RecipeStep, MaterialImage } from '@/types/supabase';
@@ -11,8 +11,9 @@ import { Loader2, Plus, X, Save, Check } from 'lucide-react';
 import { Collapsible } from '@/components/ui/collapsible';
 
 interface StepInput {
+  id?: string;
   content: string;
-  isHeading: boolean;
+  heading: string | null;
 }
 
 interface StepImage {
@@ -29,7 +30,7 @@ export default function ImagesEditPage() {
   
   const [material, setMaterial] = useState<Material | null>(null);
   const [steps, setSteps] = useState<RecipeStep[]>([]);
-  const [stepImages, setStepImages] = useState<StepImage[]>([]);
+  const [stepImages, setStepImages] = useState<{ [key: number]: MaterialImage[] }>({});
   const [newSteps, setNewSteps] = useState<StepInput[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -54,124 +55,117 @@ export default function ImagesEditPage() {
     console.log('newSteps状態変化:', newSteps);
   }, [newSteps]);
 
-  const fetchData = async () => {
-    try {
-      // 教材情報を取得
-      const { data: materialData, error: materialError } = await supabase
-        .from('materials')
-        .select('*')
-        .eq('id', materialId)
-        .single();
+  const fetchData = useCallback(async () => {
+    if (!materialId) return;
 
-      if (materialError) {
-        console.error('教材取得エラー:', materialError);
-        setError(materialError.message);
+    try {
+      console.log('🔵 データ取得開始...');
+      
+      // 手順データを取得
+      const { data: stepsData, error: stepsError } = await supabase
+        .from('recipe_steps')
+        .select('*')
+        .eq('material_id', materialId)
+        .order('step_number', { ascending: true });
+
+      if (stepsError) {
+        console.error('手順データ取得エラー:', stepsError);
         return;
       }
-      setMaterial(materialData);
-      setNoteText(materialData.note || '');
-      setSoftware(materialData.software || '');
-      setVersion(materialData.version || '');
-      setLearningNote(materialData.learning_note || '');
-      setSampleImageUrl(materialData.sample_image_url || '');
 
-      // 既存の手順を取得
-      const response = await fetch(`/api/materials/${materialId}/recipe-steps`);
-      if (response.ok) {
-        const stepsData = await response.json();
-        console.log('🔵 取得された手順データ:', stepsData);
+      console.log('🔵 取得された手順データ:', stepsData);
+
+      if (stepsData && stepsData.length > 0) {
+        // 既存の手順を入力欄に設定
+        console.log('既存の手順を入力欄に設定:', stepsData);
+        setNewSteps(stepsData);
         
-        // 既存の手順データを保存
-        setSteps(stepsData);
+        // 変換後の入力データをログ出力
+        const convertedData = stepsData.map(step => ({
+          ...step,
+          content: step.content || '',
+          heading: step.heading || null
+        }));
+        console.log('変換後の入力データ:', convertedData);
+
+        // 手順番号マッピングを作成（UIの手順番号を1から開始）
+        const mapping = new Map<number, number>();
+        let uiStepNumber = 1; // UIの手順番号を1から開始
         
-        // 既存の手順を入力欄に表示
-        if (stepsData.length > 0) {
-          console.log('既存の手順を入力欄に設定:', stepsData);
-          const existingStepsInput = stepsData.map((step: RecipeStep) => ({
+        console.log('🔵 手順番号マッピング作成開始:');
+        stepsData.forEach((step: RecipeStep, index: number) => {
+          console.log(`手順${index}:`, {
             content: step.content,
-            isHeading: !!step.heading
-          }));
-          console.log('変換後の入力データ:', existingStepsInput);
-          setNewSteps(existingStepsInput);
-          
-          // UI step index と database step_number のマッピングを作成
-          const mapping = new Map<number, number>();
-          let uiIndex = 0;
-          console.log('🔵 手順番号マッピング作成開始:');
-          stepsData.forEach((step: RecipeStep, index: number) => {
-            console.log(`手順${index}:`, {
-              content: step.content,
-              heading: step.heading,
-              step_number: step.step_number,
-              step_number_type: typeof step.step_number,
-              isHeading: !!step.heading,
-              step_number_lt_9999: step.step_number < 9999
-            });
-            
-            if (!step.heading && step.step_number < 9999) { // 小見出しでない場合のみマッピングに追加
-              mapping.set(uiIndex, step.step_number); // 実際のデータベースのstep_numberを使用
-              console.log(`✅ マッピング追加: UI[${uiIndex}] -> DB[${step.step_number}]`);
-            } else {
-              console.log(`❌ マッピング除外: UI[${uiIndex}] (小見出しまたは9999以上)`);
-            }
-            uiIndex++;
+            heading: step.heading,
+            step_number: step.step_number,
+            step_number_type: typeof step.step_number,
+            isHeading: !!step.heading,
+            step_number_lt_9999: step.step_number < 9999
           });
-          setStepNumberMapping(mapping);
-          console.log('🔵 最終的なステップ番号マッピング:', mapping);
-          console.log('🔵 マッピングの詳細:', Array.from(mapping.entries()).map(([ui, db]) => `UI[${ui}] -> DB[${db}]`));
-        } else {
-          console.log('既存の手順がありません');
-        }
+          
+          if (!step.heading && step.step_number < 9999) {
+            // UIの手順番号（1, 2, 3...）をデータベースのstep_numberにマッピング
+            mapping.set(uiStepNumber, step.step_number);
+            console.log(`✅ マッピング追加: UI[${uiStepNumber}] -> DB[${step.step_number}]`);
+            uiStepNumber++; // 次のUI手順番号
+          } else {
+            console.log(`❌ マッピング除外: UI[${uiStepNumber}] (小見出しまたは9999以上)`);
+          }
+        });
         
+        setStepNumberMapping(mapping);
+        console.log('🔵 最終的なステップ番号マッピング:', mapping);
+        console.log('🔵 マッピングの詳細:', Array.from(mapping.entries()).map(([ui, db]) => `UI[${ui}] -> DB[${db}]`));
+
         // 各手順の画像を取得
-        const stepImagesData: StepImage[] = [];
         console.log('🔵 画像取得開始:');
+        const stepImagesData: { [key: number]: MaterialImage[] } = {};
+        
         for (const step of stepsData) {
+          const shouldFetch = !step.heading && step.step_number < 9999;
           console.log(`手順${step.step_number}の画像取得:`, {
             content: step.content,
             heading: step.heading,
             step_number: step.step_number,
-            shouldFetch: !step.heading && step.step_number < 9999
+            shouldFetch
           });
           
-          if (!step.heading && step.step_number < 9999) { // 小見出しでない場合のみ画像を取得
-            const { data: images } = await supabase
+          if (shouldFetch) {
+            const { data: images, error: imagesError } = await supabase
               .from('material_images')
               .select('*')
               .eq('material_id', materialId)
-              .eq('step_id', step.step_number)
+              .eq('step_id', step.id)
               .order('order', { ascending: true });
-            
-            console.log(`手順${step.step_number}の画像:`, images);
-            
-            stepImagesData.push({
-              stepId: step.step_number, // データベースのstep_numberを使用
-              images: images || []
-            });
+
+            if (imagesError) {
+              console.error(`手順${step.step_number}の画像取得エラー:`, imagesError);
+              continue;
+            }
+
+            // step_numberをキーとして使用
+            stepImagesData[step.step_number] = images || [];
+            console.log(`手順${step.step_number}の画像:`, images || []);
           }
         }
+
         console.log('🔵 最終的な画像データ:', stepImagesData);
         setStepImages(stepImagesData);
-      } else {
-        console.error('手順取得エラー:', response.statusText);
-        setError('手順の取得に失敗しました');
       }
-    } catch {
-      setError('データの取得に失敗しました');
-    } finally {
-      setLoading(false);
+    } catch (error) {
+      console.error('データ取得エラー:', error);
     }
-  };
+  }, [materialId, supabase]);
 
   const addNewStep = () => {
-    setNewSteps([...newSteps, { content: '', isHeading: false }]);
+    setNewSteps([...newSteps, { content: '', heading: null }]);
   };
 
   const removeNewStep = (index: number) => {
     setNewSteps(newSteps.filter((_, i) => i !== index));
   };
 
-  const updateNewStep = (index: number, field: keyof StepInput, value: string | boolean) => {
+  const updateNewStep = (index: number, field: keyof StepInput, value: string | null) => {
     const updatedSteps = [...newSteps];
     updatedSteps[index] = { ...updatedSteps[index], [field]: value };
     setNewSteps(updatedSteps);
@@ -190,12 +184,12 @@ export default function ImagesEditPage() {
         .filter(step => step.content.trim())
         .map((step, index) => {
           // 小見出しの場合は大きな番号（9999など）を割り当てて、実際の手順と区別
-          const stepNumber = step.isHeading ? 9999 + index : actualStepNumber++;
+          const stepNumber = step.heading ? 9999 + index : actualStepNumber++;
           return {
             material_id: materialId,
             step_number: stepNumber,
             content: step.content.trim(),
-            heading: step.isHeading ? step.content.trim() : null
+            heading: step.heading ? step.content.trim() : null
           };
         });
 
@@ -448,20 +442,16 @@ export default function ImagesEditPage() {
       // ステップ画像を更新
       console.log('🔵 ステップ画像更新前:', { stepId, currentStepImages: stepImages });
       setStepImages(prev => {
-        const existingStep = prev.find(s => s.stepId === stepId);
+        const existingStep = prev[stepId];
         console.log('🔵 既存ステップ検索結果:', { existingStep, stepId, prev });
         
         if (existingStep) {
-          const updated = prev.map(s => 
-            s.stepId === stepId 
-              ? { ...s, images: [...s.images, imageData] }
-              : s
-          );
+          const updated = { ...prev, [stepId]: [...existingStep, imageData] };
           console.log('🔵 既存ステップ更新後:', updated);
           return updated;
         } else {
-          const newStep = { stepId, images: [imageData] };
-          const updated = [...prev, newStep];
+          const newStep = { [stepId]: [imageData] };
+          const updated = { ...prev, ...newStep };
           console.log('🔵 新規ステップ追加後:', updated);
           return updated;
         }
@@ -524,10 +514,10 @@ export default function ImagesEditPage() {
 
       // 状態を更新
       setStepImages(prev => {
-        const updated = [...prev];
-        const stepIndex = updated.findIndex(s => s.stepId === stepId);
-        if (stepIndex >= 0) {
-          updated[stepIndex].images = updated[stepIndex].images.filter(img => img.id !== imageId);
+        const updated = { ...prev };
+        const stepIndex = updated[stepId];
+        if (stepIndex) {
+          updated[stepId] = stepIndex.filter(img => img.id !== imageId);
         }
         return updated;
       });
@@ -821,19 +811,19 @@ export default function ImagesEditPage() {
               </div>
 
               <div className="space-y-4">
-                {newSteps.map((step, index) => (
-                  <div key={index} className="border rounded-lg p-4">
-                    <div className="flex items-center gap-4 mb-2">
-                      {!step.isHeading && (
-                        <span className="text-sm font-medium text-white bg-gray-900 px-2 py-1 rounded">
-                          {index + 1}
-                        </span>
-                      )}
+                                  {newSteps.map((step, index) => (
+                   <div key={step.id} className="border rounded-lg p-4">
+                     <div className="flex items-center gap-4 mb-2">
+                       {!step.heading && (
+                         <span className="text-sm font-medium text-white bg-gray-900 px-2 py-1 rounded">
+                           {stepNumberMapping.get(index + 1) || (index + 1)}
+                         </span>
+                       )}
                       <label className="flex items-center gap-2">
                         <input
                           type="checkbox"
-                          checked={step.isHeading}
-                          onChange={(e) => updateNewStep(index, 'isHeading', e.target.checked)}
+                          checked={!!step.heading}
+                          onChange={(e) => updateNewStep(index, 'heading', e.target.checked ? step.content : null)}
                           className="rounded"
                         />
                         <span className="text-sm font-medium">
@@ -854,7 +844,7 @@ export default function ImagesEditPage() {
                     <Textarea
                       value={step.content}
                       onChange={(e) => updateNewStep(index, 'content', e.target.value)}
-                      placeholder={step.isHeading ? "小見出しを入力してください" : "詳細手順を入力してください"}
+                      placeholder={step.heading ? "小見出しを入力してください" : "詳細手順を入力してください"}
                       rows={3}
                       className="w-full"
                     />
@@ -895,43 +885,41 @@ export default function ImagesEditPage() {
             </div>
             <div className="space-y-6 max-h-96 overflow-y-auto">
               {newSteps.map((step, index) => {
-                // マッピングから正しいstep_numberを取得
-                const stepNumber = stepNumberMapping.get(index) || (index + 1);
+                // マッピングから正しいstep_numberを取得（UIの手順番号を1から開始）
+                const stepNumber = stepNumberMapping.get(index + 1) || (index + 1);
                 
                 console.log(`🔵 ステップ${index}の詳細:`, {
                   content: step.content,
-                  isHeading: step.isHeading,
+                  heading: step.heading,
                   mappedStepNumber: stepNumberMapping.get(index),
                   fallbackStepNumber: index + 1,
                   finalStepNumber: stepNumber,
                   stepNumberMapping: Array.from(stepNumberMapping.entries())
                 });
                 
-                const stepImageData = stepImages.find(s => s.stepId === stepNumber);
-                const images = stepImageData?.images || [];
+                const images = stepImages[stepNumber] || [];
                 
                 console.log(`🔵 ステップ${index}の画像検索結果:`, {
                   stepNumber,
-                  stepImageData,
                   images,
                   allStepImages: stepImages
                 });
 
                 return (
-                  <div key={index} className={`${step.isHeading ? '' : 'border rounded-lg'} p-4`}>
+                  <div key={step.id} className={`${step.heading ? '' : 'border rounded-lg'} p-4`}>
                     <div className="flex items-center gap-2 mb-3">
-                      {!step.isHeading && (
+                      {!step.heading && (
                         <span className="text-sm font-medium text-white bg-gray-900 px-2 py-1 rounded">
                           {stepNumber}
                         </span>
                       )}
-                      <span className={`text-sm ${step.isHeading ? 'font-semibold text-lg text-gray-800' : 'text-gray-600'}`}>
+                      <span className={`text-sm ${step.heading ? 'font-semibold text-lg text-gray-800' : 'text-gray-600'}`}>
                         {step.content.substring(0, 50)}...
                       </span>
                     </div>
                     
                     {/* 小見出しの場合は画像アップロード欄を非表示 */}
-                    {!step.isHeading && (
+                    {!step.heading && (
                       <>
                         {/* 画像アップロード */}
                         <div className="mb-3">
