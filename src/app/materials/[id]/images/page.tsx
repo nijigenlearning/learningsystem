@@ -239,6 +239,8 @@ export default function ImagesEditPage() {
       console.log('画像アップロード開始:', {
         materialId,
         stepId,
+        stepId_type: typeof stepId,
+        stepId_value: stepId,
         fileName: file.name,
         fileSize: file.size,
         fileType: file.type
@@ -412,11 +414,22 @@ export default function ImagesEditPage() {
       console.log('公開URL:', urlData.publicUrl);
 
       // material_imagesテーブルに保存
+      console.log('DB挿入前のデータ確認（メイン処理）:', {
+        material_id: materialId,
+        step_id: stepId,
+        step_id_type: typeof stepId,
+        image_url: urlData.publicUrl,
+        file_name: file.name,
+        file_size: file.size,
+        mime_type: file.type,
+        order: 1
+      });
+
       const { data: imageData, error: dbError } = await supabase
         .from('material_images')
         .insert({
           material_id: materialId,
-          step_id: stepId,
+          step_id: stepId.toString(), // step_idを文字列に変換
           image_url: urlData.publicUrl,
           file_name: file.name,
           file_size: file.size,
@@ -427,12 +440,24 @@ export default function ImagesEditPage() {
         .single();
 
       if (dbError) {
-        console.error('DB保存エラー:', dbError);
-        setError(`画像情報の保存に失敗しました: ${dbError.message}`);
+        console.error('データベース保存エラー詳細:', {
+          error: dbError,
+          message: dbError.message,
+          details: dbError.details,
+          hint: dbError.hint,
+          code: dbError.code
+        });
+        
+        // 409エラーの場合は詳細な情報を表示
+        if (dbError.code === '409') {
+          setError(`画像情報の保存に失敗しました（409エラー）: ${dbError.message || '重複または制約違反'}`);
+        } else {
+          setError(`画像情報の保存に失敗しました: ${dbError.message || '不明なエラー'}`);
+        }
         return;
       }
 
-      console.log('DB保存成功:', imageData);
+      console.log('データベース保存成功:', imageData);
 
       // 状態を更新
       setStepImages(prev => {
