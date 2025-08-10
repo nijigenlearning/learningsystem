@@ -249,7 +249,7 @@ export default function ImagesEditPage() {
 
       if (fetchError) {
         console.error('既存画像のorder取得エラー:', fetchError);
-        setError('既存画像の情報取得に失敗しました');
+        setError('既存画像の確認に失敗しました');
         return;
       }
 
@@ -278,8 +278,8 @@ export default function ImagesEditPage() {
 
       if (bucketsError) {
         console.error('バケット一覧取得エラー:', bucketsError);
-        setError('ストレージバケットの確認に失敗しました');
-        return;
+        // バケット一覧取得に失敗しても、デフォルトバケット名で試行
+        console.log('バケット一覧取得に失敗しましたが、デフォルトバケット名で試行します');
       }
 
       // 利用可能なバケット名を取得
@@ -290,13 +290,15 @@ export default function ImagesEditPage() {
       let defaultBucketName = 'material-images';
       
       if (availableBucketNames.length === 0) {
-        console.log('バケットが存在しません');
-        setError('ストレージバケットが設定されていません。管理者に連絡してください。');
-        return;
+        console.log('バケットが存在しませんが、デフォルトバケット名で試行します');
+        // バケットが存在しない場合でも、デフォルトバケット名で試行
+        // 実際のアップロード時にエラーが発生した場合は、その時点でエラーハンドリング
       } else if (!availableBucketNames.includes(defaultBucketName)) {
-        console.log('デフォルトバケット名を使用:', defaultBucketName);
+        console.log('デフォルトバケット名が存在しないため、最初の利用可能なバケットを使用:', availableBucketNames[0]);
         // デフォルトバケットが存在しない場合は、最初の利用可能なバケットを使用
         defaultBucketName = availableBucketNames[0];
+      } else {
+        console.log('デフォルトバケット名を使用:', defaultBucketName);
       }
 
       // ファイル名を生成

@@ -106,7 +106,7 @@ export default function MaterialViewPage() {
   // 手順と画像を組み合わせる
   const stepsWithImages: StepWithImages[] = steps.map(step => {
     const filteredImages = stepImages.filter(img => {
-      // step_idとstep_numberを数値として比較（型の違いに対応）
+      // step_idはstep_numberとして保存されている
       // データベースに文字列として保存されている可能性もあるため、両方の型に対応
       const imgStepId = typeof img.step_id === 'string' ? parseInt(img.step_id, 10) : Number(img.step_id);
       const stepNumber = Number(step.step_number);
