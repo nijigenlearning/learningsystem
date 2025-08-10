@@ -149,6 +149,8 @@ export default function ImagesEditPage() {
         
         // 手順データが存在しない場合のエラーメッセージを設定
         setError('手順データが存在しません。工程3（手順作成）で手順を作成してから、このページにアクセスしてください。');
+        setNewSteps([]); // 空の配列を設定
+        setShowStepEditing(true); // 手順編集セクションを自動的に表示
         setLoading(false);
         return;
       }
@@ -726,11 +728,34 @@ export default function ImagesEditPage() {
                     { content: '手順3の内容を入力してください', heading: null }
                   ]);
                   setShowStepEditing(true);
+                  setError(''); // エラーメッセージをクリア
                 }}
                 variant="outline"
                 className="border-yellow-600 text-yellow-600 hover:bg-yellow-50"
               >
                 サンプル手順を追加
+              </Button>
+              <Button
+                onClick={() => router.push(`/materials/${materialId}/steps`)}
+                variant="outline"
+                className="border-blue-600 text-blue-600 hover:bg-blue-50"
+              >
+                工程3（手順作成）に移動
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* エラーメッセージの表示 */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-red-800">{error}</p>
+            <div className="mt-3">
+              <Button
+                onClick={() => router.push(`/materials/${materialId}/steps`)}
+                className="bg-red-600 hover:bg-red-700"
+              >
+                工程3（手順作成）に移動
               </Button>
             </div>
           </div>
@@ -813,147 +838,46 @@ export default function ImagesEditPage() {
           </div>
         </div>
 
-        {/* 手順編集セクション */}
+                  {/* 手順編集セクション */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-gray-900">手順編集</h3>
-            <Button
-              onClick={() => setShowStepEditing(!showStepEditing)}
-              variant="outline"
-              className="text-blue-600 border-blue-300 hover:bg-blue-50"
-            >
-              {showStepEditing ? '手順編集を閉じる' : '手順編集を開く'}
-            </Button>
+            <h3 className="text-lg font-semibold text-gray-900">
+              {newSteps.length === 0 ? '手順の作成' : '手順の編集'}
+            </h3>
+            {newSteps.length > 0 && (
+              <Button
+                onClick={() => setShowStepEditing(!showStepEditing)}
+                variant="outline"
+                className="text-blue-600 border-blue-300 hover:bg-blue-50"
+              >
+                {showStepEditing ? '手順編集を閉じる' : '手順編集を開く'}
+              </Button>
+            )}
           </div>
           
-          {/* 小見出し変更の影響に関する警告 */}
-          <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-            <div className="flex items-start">
-              <div className="flex-shrink-0">
-                <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <div className="ml-3">
-                <h4 className="text-sm font-medium text-yellow-800">重要: 小見出しの変更について</h4>
-                <div className="mt-2 text-sm text-yellow-700">
-                  <p>小見出しのチェックを付け外しすると、手順番号が変更され、既存の画像との紐づけが影響を受ける可能性があります。</p>
-                  <ul className="mt-2 list-disc list-inside space-y-1">
-                    <li>手順から小見出しに変更 → 画像が表示されなくなる</li>
-                    <li>小見出しから手順に変更 → 画像の手順番号が変わる</li>
-                  </ul>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* 手順データが空の場合のメッセージ */}
-          {!loading && newSteps.length === 0 && (
-            <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <p className="text-yellow-800">
-                この教材にはまだ手順が登録されていません。まず手順を登録してから画像をアップロードしてください。
-              </p>
-              <div className="mt-3 space-x-2">
-                <Button
-                  onClick={() => setShowStepEditing(true)}
-                  className="bg-yellow-600 hover:bg-yellow-700"
-                >
-                  手順を登録する
-                </Button>
-                <Button
-                  onClick={() => {
-                    setNewSteps([
-                      { content: '手順1の内容を入力してください', heading: null },
-                      { content: '手順2の内容を入力してください', heading: null },
-                      { content: '手順3の内容を入力してください', heading: null }
-                    ]);
-                    setShowStepEditing(true);
-                  }}
-                  variant="outline"
-                  className="border-yellow-600 text-yellow-600 hover:bg-yellow-50"
-                >
-                  サンプル手順を追加
-                </Button>
-              </div>
-            </div>
-          )}
-
-          {/* 動画情報（トグル） */}
-          <div className="mb-6">
-            <Collapsible title="動画情報" defaultOpen={false} className="border-gray-300">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <h4 className="font-medium text-gray-900 mb-2">動画タイトル</h4>
-                  <p className="text-gray-600">{material.video_title || '未設定'}</p>
-                </div>
-                <div>
-                  <h4 className="font-medium text-gray-900 mb-2">動画URL</h4>
-                  <p className="text-gray-600">{material.youtube_url || '未設定'}</p>
-                </div>
-                <div className="md:col-span-2">
-                  <h4 className="font-medium text-gray-900 mb-2">動画説明</h4>
-                  <p className="text-gray-600">{material.video_description || '未設定'}</p>
-                </div>
-              </div>
-            </Collapsible>
-          </div>
-
-          {/* 作成指示と備考（横並び） */}
-          <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="bg-white rounded-lg shadow-md p-6 border-2 border-red-200">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">作成指示</h3>
-              <p className="text-gray-700 whitespace-pre-wrap">
-                {material.instruction || '作成指示がありません'}
-              </p>
-            </div>
-            <div className="bg-white rounded-lg shadow-md p-6 border-2 border-blue-200">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">備考</h3>
-                <Button
-                  onClick={() => setEditingNote(!editingNote)}
-                  variant="outline"
-                  size="sm"
-                  className="text-blue-600 border-blue-300 hover:bg-blue-50"
-                >
-                  {editingNote ? 'キャンセル' : '編集'}
-                </Button>
-              </div>
-              {editingNote ? (
-                <div className="space-y-3">
-                  <Textarea
-                    value={noteText}
-                    onChange={(e) => setNoteText(e.target.value)}
-                    placeholder="備考を入力してください"
-                    rows={4}
-                    className="w-full"
-                  />
-                  <div className="flex gap-2">
-                    <Button
-                      onClick={handleNoteSave}
-                      size="sm"
-                      className="bg-blue-600 hover:bg-blue-700"
-                    >
-                      保存
-                    </Button>
-                    <Button
-                      onClick={() => {
-                        setEditingNote(false);
-                        setNoteText(material.note || '');
-                      }}
-                      variant="outline"
-                      size="sm"
-                    >
-                      キャンセル
-                    </Button>
+          {/* 手順データが空の場合は強制的に手順編集セクションを表示 */}
+          {(showStepEditing || newSteps.length === 0) && (
+            <>
+              {/* 小見出し変更の影響に関する警告 */}
+              <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+                <div className="flex items-start">
+                  <div className="flex-shrink-0">
+                    <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div className="ml-3">
+                    <h4 className="text-sm font-medium text-yellow-800">重要: 小見出しの変更について</h4>
+                    <div className="mt-2 text-sm text-yellow-700">
+                      <p>小見出しのチェックを付け外しすると、手順番号が変更され、既存の画像との紐づけが影響を受ける可能性があります。</p>
+                      <ul className="mt-2 list-disc list-inside space-y-1">
+                        <li>手順から小見出しに変更 → 画像が表示されなくなる</li>
+                        <li>小見出しから手順に変更 → 画像の手順番号が変わる</li>
+                      </ul>
+                    </div>
                   </div>
                 </div>
-              ) : (
-                <p className="text-gray-700 whitespace-pre-wrap">
-                  {material.note || '備考がありません'}
-                </p>
-              )}
-            </div>
-          </div>
+              </div>
 
           {/* 手順と画像の2列レイアウト */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start mb-8">
@@ -1253,6 +1177,8 @@ export default function ImagesEditPage() {
               )}
             </Button>
           </div>
+            </>
+          )}
         </div>
       </div>
     </div>
