@@ -134,6 +134,11 @@ export default function ImagesEditPage() {
         } else {
           console.log('🔍 教材存在確認結果:', materialCheck);
         }
+        
+        // 手順データが存在しない場合のエラーメッセージを設定
+        setError('手順データが存在しません。工程3（手順作成）で手順を作成してから、このページにアクセスしてください。');
+        setLoading(false);
+        return;
       }
 
       if (stepsData && stepsData.length > 0) {
@@ -175,49 +180,41 @@ export default function ImagesEditPage() {
         });
         
         setStepNumberMapping(mapping);
-        console.log('🔵 最終的なステップ番号マッピング:', mapping);
-        console.log('🔵 マッピングの詳細:', Array.from(mapping.entries()).map(([ui, db]) => `UI[${ui}] -> DB[${db}]`));
-
-        // 各手順の画像を取得
-        console.log('🔵 画像取得開始:');
-        const stepImagesData: { [key: string]: MaterialImage[] } = {};
+        console.log('🔵 最終的な手順番号マッピング:', Object.fromEntries(mapping));
         
-        for (const step of stepsData) {
-          const shouldFetch = !step.heading && step.step_number < 9999;
-          console.log(`手順${step.step_number}の画像取得:`, {
-            content: step.content,
-            heading: step.heading,
-            step_number: step.step_number,
-            step_id: step.id,
-            shouldFetch
-          });
-          
-          if (shouldFetch) {
-            const { data: images, error: imagesError } = await supabase
-              .from('material_images')
-              .select('*')
-              .eq('material_id', materialId)
-              .eq('step_id', step.id)
-              .order('order', { ascending: true });
-
-            if (imagesError) {
-              console.error(`手順${step.step_number}の画像取得エラー:`, imagesError);
-              continue;
-            }
-
-            // step.id（UUID）をキーとして使用
-            stepImagesData[step.id] = images || [];
-            console.log(`手順${step.step_number}（ID: ${step.id}）の画像:`, images || []);
+        // 各手順の画像を取得
+        console.log('🔵 各手順の画像を取得中...');
+        const imagePromises = stepsData.map(async (step) => {
+          if (!step.id) {
+            console.warn('手順にIDがありません:', step);
+            return;
           }
-        }
-
-        console.log('🔵 最終的な画像データ:', stepImagesData);
-        setStepImages(stepImagesData);
-      } else {
-        console.log('⚠️ 手順データが存在しません。新しい手順を作成してください。');
-        setNewSteps([]);
-        setStepImages({});
-        setStepNumberMapping(new Map());
+          
+          console.log(`🔵 手順${step.step_number}の画像を取得中...`, { step_id: step.id });
+          
+          const { data: images, error: imagesError } = await supabase
+            .from('material_images')
+            .select('*')
+            .eq('step_id', step.id)
+            .order('order', { ascending: true });
+          
+          if (imagesError) {
+            console.error(`手順${step.step_number}の画像取得エラー:`, imagesError);
+            return;
+          }
+          
+          console.log(`🔵 手順${step.step_number}の画像:`, images);
+          
+          if (images && images.length > 0) {
+            setStepImages(prev => ({
+              ...prev,
+              [step.id!]: images
+            }));
+          }
+        });
+        
+        await Promise.all(imagePromises);
+        console.log('🔵 全手順の画像取得完了');
       }
     } catch (error) {
       console.error('データ取得エラー:', error);
@@ -776,6 +773,16 @@ export default function ImagesEditPage() {
         {error && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
             <p className="text-red-800">{error}</p>
+            {error.includes('手順データが存在しません') && (
+              <div className="mt-3">
+                <Button
+                  onClick={() => router.push(`/materials/${materialId}/steps`)}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  工程3（手順作成）に戻る
+                </Button>
+              </div>
+            )}
           </div>
         )}
         {success && (
