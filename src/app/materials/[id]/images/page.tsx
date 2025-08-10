@@ -96,9 +96,11 @@ export default function ImagesEditPage() {
           // UI step index と database step_number のマッピングを作成
           const mapping = new Map<number, number>();
           let uiIndex = 0;
+          let actualStepNumber = 1; // 実際の手順番号（小見出しを除く）
           stepsData.forEach((step: RecipeStep) => {
-            if (!step.heading) { // 小見出しでない場合のみマッピングに追加
-              mapping.set(uiIndex, step.step_number);
+            if (!step.heading && step.step_number < 9999) { // 小見出しでない場合のみマッピングに追加
+              mapping.set(uiIndex, actualStepNumber);
+              actualStepNumber++;
             }
             uiIndex++;
           });
@@ -111,17 +113,19 @@ export default function ImagesEditPage() {
         // 各手順の画像を取得
         const stepImagesData: StepImage[] = [];
         for (const step of stepsData) {
-          const { data: images } = await supabase
-            .from('material_images')
-            .select('*')
-            .eq('material_id', materialId)
-            .eq('step_id', step.step_number)
-            .order('order', { ascending: true });
-          
-          stepImagesData.push({
-            stepId: step.step_number,
-            images: images || []
-          });
+          if (!step.heading && step.step_number < 9999) { // 小見出しでない場合のみ画像を取得
+            const { data: images } = await supabase
+              .from('material_images')
+              .select('*')
+              .eq('material_id', materialId)
+              .eq('step_id', step.step_number)
+              .order('order', { ascending: true });
+            
+            stepImagesData.push({
+              stepId: step.step_number, // データベースのstep_numberを使用
+              images: images || []
+            });
+          }
         }
         setStepImages(stepImagesData);
       } else {
@@ -156,14 +160,20 @@ export default function ImagesEditPage() {
 
     try {
       // 新しい手順を一時保存ステータスで保存
+      // 小見出しを除いて正しいstep_numberを計算
+      let actualStepNumber = 1;
       const stepsToSave = newSteps
         .filter(step => step.content.trim())
-        .map((step, index) => ({
-          material_id: materialId,
-          step_number: index + 1,
-          content: step.content.trim(),
-          heading: step.isHeading ? step.content.trim() : null
-        }));
+        .map((step, index) => {
+          // 小見出しの場合は大きな番号（9999など）を割り当てて、実際の手順と区別
+          const stepNumber = step.isHeading ? 9999 + index : actualStepNumber++;
+          return {
+            material_id: materialId,
+            step_number: stepNumber,
+            content: step.content.trim(),
+            heading: step.isHeading ? step.content.trim() : null
+          };
+        });
 
       console.log('一時保存する手順:', stepsToSave);
 
@@ -212,7 +222,7 @@ export default function ImagesEditPage() {
             const newMapping = new Map<number, number>();
             let uiIndex = 0;
             stepsToSave.forEach((step) => {
-              if (!step.heading) { // 小見出しでない場合のみマッピングに追加
+              if (!step.heading && step.step_number < 9999) { // 小見出しでない場合のみマッピングに追加
                 newMapping.set(uiIndex, step.step_number);
               }
               uiIndex++;
