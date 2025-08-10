@@ -23,7 +23,22 @@ export default function MaterialDetailPage() {
   const [savingTitle, setSavingTitle] = useState(false);
 
   // 一般画面からアクセスされたかどうかを判定
-  const isGeneralView = typeof window !== 'undefined' && !window.location.pathname.includes('/admin');
+  const [isGeneralView, setIsGeneralView] = useState(true);
+
+  useEffect(() => {
+    // 管理者画面からのアクセスかどうかを判定
+    const checkIsGeneralView = () => {
+      // referrerを使用して管理者画面からのアクセスかどうかを判定
+      const referrer = document.referrer;
+      const isFromAdmin = referrer.includes('/admin');
+      setIsGeneralView(!isFromAdmin);
+    };
+
+    // クライアントサイドでのみ実行
+    if (typeof window !== 'undefined') {
+      checkIsGeneralView();
+    }
+  }, []);
 
   useEffect(() => {
     fetchData();
