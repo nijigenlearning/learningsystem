@@ -28,6 +28,7 @@ export default function ImagesEditPage() {
   console.log('🔵 ImagesEditPage 開始:', { materialId, params });
   
   const [material, setMaterial] = useState<Material | null>(null);
+  const [steps, setSteps] = useState<RecipeStep[]>([]);
   const [stepImages, setStepImages] = useState<StepImage[]>([]);
   const [newSteps, setNewSteps] = useState<StepInput[]>([]);
   const [loading, setLoading] = useState(true);
@@ -77,6 +78,9 @@ export default function ImagesEditPage() {
       const response = await fetch(`/api/materials/${materialId}/recipe-steps`);
       if (response.ok) {
         const stepsData = await response.json();
+        
+        // 既存の手順データを保存
+        setSteps(stepsData);
         
         // 既存の手順を入力欄に表示
         if (stepsData.length > 0) {
@@ -818,13 +822,17 @@ export default function ImagesEditPage() {
             </div>
             <div className="space-y-6 max-h-96 overflow-y-auto">
               {newSteps.map((step, index) => {
+                // 既存の手順データから正しいstep_numberを取得
+                const existingStep = steps.find(s => s.content === step.content && s.heading === (step.isHeading ? step.content : null));
+                const stepNumber = existingStep ? existingStep.step_number : index + 1;
+                
                 // 通し番号を計算（小見出しを除く）
                 const currentStepNumber = newSteps
                   .slice(0, index + 1)
                   .filter((s) => !s.isHeading)
                   .length;
                 
-                const stepImageData = stepImages.find(s => s.stepId === currentStepNumber);
+                const stepImageData = stepImages.find(s => s.stepId === stepNumber);
                 const images = stepImageData?.images || [];
 
                 return (
@@ -832,7 +840,7 @@ export default function ImagesEditPage() {
                     <div className="flex items-center gap-2 mb-3">
                       {!step.isHeading && (
                         <span className="text-sm font-medium text-white bg-gray-900 px-2 py-1 rounded">
-                          {currentStepNumber}
+                          {stepNumber}
                         </span>
                       )}
                       <span className={`text-sm ${step.isHeading ? 'font-semibold text-lg text-gray-800' : 'text-gray-600'}`}>
@@ -854,7 +862,7 @@ export default function ImagesEditPage() {
                             onChange={(e) => {
                               const file = e.target.files?.[0];
                               if (file) {
-                                handleImageUpload(file, currentStepNumber);
+                                handleImageUpload(file, stepNumber);
                               }
                             }}
                             className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
@@ -874,7 +882,7 @@ export default function ImagesEditPage() {
                                     className="w-full h-24 object-cover rounded border"
                                   />
                                   <button
-                                    onClick={() => handleImageDelete(image.id, currentStepNumber)}
+                                    onClick={() => handleImageDelete(image.id, stepNumber)}
                                     className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600"
                                   >
                                     <X className="w-3 h-3" />
