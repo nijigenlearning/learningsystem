@@ -43,11 +43,14 @@ export default function ImagesEditPage() {
   const [version, setVersion] = useState('');
   const [learningNote, setLearningNote] = useState('');
   const [sampleImageUrl, setSampleImageUrl] = useState('');
-  const [showStepEditing, setShowStepEditing] = useState(false);
+  const [showStepEditing, setShowStepEditing] = useState(true);
   const [stepNumberMapping, setStepNumberMapping] = useState<Map<number, number>>(new Map());
 
   useEffect(() => {
-    fetchData();
+    if (materialId) {
+      setLoading(true);
+      fetchData();
+    }
   }, [materialId]);
 
   // デバッグ用：newStepsの状態変化を監視
@@ -60,8 +63,24 @@ export default function ImagesEditPage() {
 
     try {
       console.log('🔵 データ取得開始...');
+      console.log('🔵 対象の教材ID:', materialId);
+      
+      // まず教材自体が存在するか確認
+      const { data: materialData, error: materialError } = await supabase
+        .from('materials')
+        .select('*')
+        .eq('id', materialId)
+        .single();
+
+      if (materialError) {
+        console.error('教材データ取得エラー:', materialError);
+        return;
+      }
+
+      console.log('🔵 教材データ:', materialData);
       
       // 手順データを取得
+      console.log('🔵 recipe_stepsテーブルから手順データを取得中...');
       const { data: stepsData, error: stepsError } = await supabase
         .from('recipe_steps')
         .select('*')
@@ -74,6 +93,7 @@ export default function ImagesEditPage() {
       }
 
       console.log('🔵 取得された手順データ:', stepsData);
+      console.log('🔵 手順データの件数:', stepsData?.length || 0);
 
       if (stepsData && stepsData.length > 0) {
         // 既存の手順を入力欄に設定
@@ -151,9 +171,16 @@ export default function ImagesEditPage() {
 
         console.log('🔵 最終的な画像データ:', stepImagesData);
         setStepImages(stepImagesData);
+      } else {
+        console.log('⚠️ 手順データが存在しません。新しい手順を作成してください。');
+        setNewSteps([]);
+        setStepImages({});
+        setStepNumberMapping(new Map());
       }
     } catch (error) {
       console.error('データ取得エラー:', error);
+    } finally {
+      setLoading(false);
     }
   }, [materialId, supabase]);
 
@@ -715,6 +742,37 @@ export default function ImagesEditPage() {
           </div>
         )}
 
+        {/* 手順データが空の場合のメッセージ */}
+        {!loading && newSteps.length === 0 && (
+          <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <p className="text-yellow-800">
+              この教材にはまだ手順が登録されていません。まず手順を登録してから画像をアップロードしてください。
+            </p>
+            <div className="mt-3 space-x-2">
+              <Button
+                onClick={() => setShowStepEditing(true)}
+                className="bg-yellow-600 hover:bg-yellow-700"
+              >
+                手順を登録する
+              </Button>
+              <Button
+                onClick={() => {
+                  setNewSteps([
+                    { content: '手順1の内容を入力してください', heading: null },
+                    { content: '手順2の内容を入力してください', heading: null },
+                    { content: '手順3の内容を入力してください', heading: null }
+                  ]);
+                  setShowStepEditing(true);
+                }}
+                variant="outline"
+                className="border-yellow-600 text-yellow-600 hover:bg-yellow-50"
+              >
+                サンプル手順を追加
+              </Button>
+            </div>
+          </div>
+        )}
+
         {/* 動画情報（トグル） */}
         <div className="mb-6">
           <Collapsible title="動画情報" defaultOpen={false} className="border-gray-300">
@@ -811,14 +869,14 @@ export default function ImagesEditPage() {
               </div>
 
               <div className="space-y-4">
-                                  {newSteps.map((step, index) => (
-                   <div key={step.id} className="border rounded-lg p-4">
-                     <div className="flex items-center gap-4 mb-2">
-                       {!step.heading && (
-                         <span className="text-sm font-medium text-white bg-gray-900 px-2 py-1 rounded">
-                           {stepNumberMapping.get(index + 1) || (index + 1)}
-                         </span>
-                       )}
+                {newSteps.map((step, index) => (
+                  <div key={step.id || index} className="border rounded-lg p-4">
+                    <div className="flex items-center gap-4 mb-2">
+                      {!step.heading && (
+                        <span className="text-sm font-medium text-white bg-gray-900 px-2 py-1 rounded">
+                          {stepNumberMapping.get(index + 1) || (index + 1)}
+                        </span>
+                      )}
                       <label className="flex items-center gap-2">
                         <input
                           type="checkbox"
