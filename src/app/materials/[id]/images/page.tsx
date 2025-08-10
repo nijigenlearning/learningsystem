@@ -79,6 +79,7 @@ export default function ImagesEditPage() {
       const response = await fetch(`/api/materials/${materialId}/recipe-steps`);
       if (response.ok) {
         const stepsData = await response.json();
+        console.log('🔵 取得された手順データ:', stepsData);
         
         // 既存の手順データを保存
         setSteps(stepsData);
@@ -96,23 +97,43 @@ export default function ImagesEditPage() {
           // UI step index と database step_number のマッピングを作成
           const mapping = new Map<number, number>();
           let uiIndex = 0;
-          let actualStepNumber = 1; // 実際の手順番号（小見出しを除く）
-          stepsData.forEach((step: RecipeStep) => {
+          console.log('🔵 手順番号マッピング作成開始:');
+          stepsData.forEach((step: RecipeStep, index: number) => {
+            console.log(`手順${index}:`, {
+              content: step.content,
+              heading: step.heading,
+              step_number: step.step_number,
+              step_number_type: typeof step.step_number,
+              isHeading: !!step.heading,
+              step_number_lt_9999: step.step_number < 9999
+            });
+            
             if (!step.heading && step.step_number < 9999) { // 小見出しでない場合のみマッピングに追加
-              mapping.set(uiIndex, actualStepNumber);
-              actualStepNumber++;
+              mapping.set(uiIndex, step.step_number); // 実際のデータベースのstep_numberを使用
+              console.log(`✅ マッピング追加: UI[${uiIndex}] -> DB[${step.step_number}]`);
+            } else {
+              console.log(`❌ マッピング除外: UI[${uiIndex}] (小見出しまたは9999以上)`);
             }
             uiIndex++;
           });
           setStepNumberMapping(mapping);
-          console.log('ステップ番号マッピング:', mapping);
+          console.log('🔵 最終的なステップ番号マッピング:', mapping);
+          console.log('🔵 マッピングの詳細:', Array.from(mapping.entries()).map(([ui, db]) => `UI[${ui}] -> DB[${db}]`));
         } else {
           console.log('既存の手順がありません');
         }
         
         // 各手順の画像を取得
         const stepImagesData: StepImage[] = [];
+        console.log('🔵 画像取得開始:');
         for (const step of stepsData) {
+          console.log(`手順${step.step_number}の画像取得:`, {
+            content: step.content,
+            heading: step.heading,
+            step_number: step.step_number,
+            shouldFetch: !step.heading && step.step_number < 9999
+          });
+          
           if (!step.heading && step.step_number < 9999) { // 小見出しでない場合のみ画像を取得
             const { data: images } = await supabase
               .from('material_images')
@@ -121,12 +142,15 @@ export default function ImagesEditPage() {
               .eq('step_id', step.step_number)
               .order('order', { ascending: true });
             
+            console.log(`手順${step.step_number}の画像:`, images);
+            
             stepImagesData.push({
               stepId: step.step_number, // データベースのstep_numberを使用
               images: images || []
             });
           }
         }
+        console.log('🔵 最終的な画像データ:', stepImagesData);
         setStepImages(stepImagesData);
       } else {
         console.error('手順取得エラー:', response.statusText);
@@ -263,7 +287,12 @@ export default function ImagesEditPage() {
 
   const handleImageUpload = async (file: File, stepId: number) => {
     try {
-      console.log('画像アップロード開始:', { file, stepId });
+      console.log('🔵 画像アップロード開始:', { 
+        file: { name: file.name, size: file.size, type: file.type }, 
+        stepId,
+        stepIdType: typeof stepId,
+        stepNumberMapping: Array.from(stepNumberMapping.entries())
+      });
 
       // ファイルサイズチェック
       if (file.size > 5 * 1024 * 1024) {
@@ -278,6 +307,7 @@ export default function ImagesEditPage() {
       }
 
       // 既存の画像のorder値を確認して次の順序番号を取得
+      console.log('🔵 既存画像のorder確認:', { materialId, stepId });
       const { data: existingImages, error: fetchError } = await supabase
         .from('material_images')
         .select('order')
@@ -297,7 +327,7 @@ export default function ImagesEditPage() {
         ? Math.max(...existingImages.map(img => img.order)) + 1 
         : 1;
 
-      console.log('次のorder値:', { existingImages, nextOrder });
+      console.log('🔵 次のorder値:', { existingImages, nextOrder, stepId });
 
       // 環境変数確認
       console.log('環境変数確認:', {
@@ -370,7 +400,7 @@ export default function ImagesEditPage() {
       console.log('公開URL:', urlData.publicUrl);
 
       // material_imagesテーブルに保存
-      console.log('DB挿入前のデータ確認:', {
+      console.log('🔵 DB挿入前のデータ確認:', {
         material_id: materialId,
         step_id: stepId,
         step_id_type: typeof stepId,
@@ -396,7 +426,7 @@ export default function ImagesEditPage() {
         .single();
 
       if (dbError) {
-        console.error('DB保存エラー詳細:', {
+        console.error('🔵 DB保存エラー詳細:', {
           error: dbError,
           message: dbError.message,
           details: dbError.details,
@@ -413,25 +443,33 @@ export default function ImagesEditPage() {
         return;
       }
 
-      console.log('データベース保存成功:', imageData);
+      console.log('🔵 データベース保存成功:', imageData);
 
       // ステップ画像を更新
+      console.log('🔵 ステップ画像更新前:', { stepId, currentStepImages: stepImages });
       setStepImages(prev => {
         const existingStep = prev.find(s => s.stepId === stepId);
+        console.log('🔵 既存ステップ検索結果:', { existingStep, stepId, prev });
+        
         if (existingStep) {
-          return prev.map(s => 
+          const updated = prev.map(s => 
             s.stepId === stepId 
               ? { ...s, images: [...s.images, imageData] }
               : s
           );
+          console.log('🔵 既存ステップ更新後:', updated);
+          return updated;
         } else {
-          return [...prev, { stepId, images: [imageData] }];
+          const newStep = { stepId, images: [imageData] };
+          const updated = [...prev, newStep];
+          console.log('🔵 新規ステップ追加後:', updated);
+          return updated;
         }
       });
 
       setSuccess('画像がアップロードされました');
     } catch (err) {
-      console.error('画像アップロードエラー詳細:', err);
+      console.error('🔵 画像アップロードエラー詳細:', err);
       setError(`画像のアップロードに失敗しました: ${err instanceof Error ? err.message : '不明なエラー'}`);
     }
   };
@@ -860,16 +898,24 @@ export default function ImagesEditPage() {
                 // マッピングから正しいstep_numberを取得
                 const stepNumber = stepNumberMapping.get(index) || (index + 1);
                 
-                console.log(`ステップ${index}の詳細:`, {
+                console.log(`🔵 ステップ${index}の詳細:`, {
                   content: step.content,
                   isHeading: step.isHeading,
                   mappedStepNumber: stepNumberMapping.get(index),
                   fallbackStepNumber: index + 1,
-                  finalStepNumber: stepNumber
+                  finalStepNumber: stepNumber,
+                  stepNumberMapping: Array.from(stepNumberMapping.entries())
                 });
                 
                 const stepImageData = stepImages.find(s => s.stepId === stepNumber);
                 const images = stepImageData?.images || [];
+                
+                console.log(`🔵 ステップ${index}の画像検索結果:`, {
+                  stepNumber,
+                  stepImageData,
+                  images,
+                  allStepImages: stepImages
+                });
 
                 return (
                   <div key={index} className={`${step.isHeading ? '' : 'border rounded-lg'} p-4`}>
@@ -898,6 +944,7 @@ export default function ImagesEditPage() {
                             onChange={(e) => {
                               const file = e.target.files?.[0];
                               if (file) {
+                                console.log(`🔵 ファイル選択: ステップ${index} (stepNumber: ${stepNumber})`, file);
                                 handleImageUpload(file, stepNumber);
                               }
                             }}

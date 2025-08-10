@@ -55,9 +55,14 @@ export default function MaterialViewPage() {
           id: step.id,
           step_number: step.step_number,
           step_number_type: typeof step.step_number,
-          content: step.content
+          content: step.content,
+          heading: step.heading
         })));
-        setSteps(stepsData);
+        
+        // 小見出しを除外して実際の手順のみを取得
+        const actualSteps = stepsData.filter((step: RecipeStep) => !step.heading && step.step_number < 9999);
+        console.log('実際の手順（小見出し除外）:', actualSteps);
+        setSteps(actualSteps);
       } else {
         console.error('手順取得エラー:', response.statusText);
         setError('手順の取得に失敗しました');
@@ -103,7 +108,7 @@ export default function MaterialViewPage() {
     fetchData();
   }, [fetchData]);
 
-  // 手順と画像を組み合わせる
+  // 手順と画像を組み合わせる（小見出しを除外）
   const stepsWithImages: StepWithImages[] = steps.map(step => {
     const filteredImages = stepImages.filter(img => {
       // step_idはstep_numberとして保存されている
