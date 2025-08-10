@@ -48,6 +48,7 @@ export default function StepsEditPage() {
   const [showBookmarkButton, setShowBookmarkButton] = useState(false);
   const [bookmarkButtonPosition, setBookmarkButtonPosition] = useState({ x: 0, y: 0 });
   const [hoveredBookmark, setHoveredBookmark] = useState<string | null>(null);
+  const [showStepEditing, setShowStepEditing] = useState(false);
 
   useEffect(() => {
     fetchData();
@@ -116,6 +117,29 @@ export default function StepsEditPage() {
 
   const updateNewStep = (index: number, field: keyof StepInput, value: string | boolean) => {
     const updatedSteps = [...newSteps];
+    
+    // 小見出しの変更を検出
+    if (field === 'isHeading' && updatedSteps[index].isHeading !== value) {
+      const wasHeading = updatedSteps[index].isHeading;
+      const willBeHeading = value as boolean;
+      
+      if (wasHeading && !willBeHeading) {
+        // 小見出しから手順に変更
+        if (confirm('小見出しから手順に変更すると、既存の画像との紐づけが変更される可能性があります。続行しますか？')) {
+          console.log('⚠️ 小見出しから手順に変更:', { index, content: updatedSteps[index].content });
+        } else {
+          return; // キャンセル
+        }
+      } else if (!wasHeading && willBeHeading) {
+        // 手順から小見出しに変更
+        if (confirm('手順から小見出しに変更すると、既存の画像が表示されなくなる可能性があります。続行しますか？')) {
+          console.log('⚠️ 手順から小見出しに変更:', { index, content: updatedSteps[index].content });
+        } else {
+          return; // キャンセル
+        }
+      }
+    }
+    
     updatedSteps[index] = { ...updatedSteps[index], [field]: value };
     setNewSteps(updatedSteps);
   };
@@ -572,6 +596,41 @@ export default function StepsEditPage() {
                 {material.note || '備考がありません'}
               </p>
             )}
+          </div>
+        </div>
+
+        {/* 手順編集セクション */}
+        <div className="mb-8">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">作成手順</h3>
+            <Button
+              onClick={() => setShowStepEditing(!showStepEditing)}
+              variant="outline"
+              className="text-blue-600 border-blue-300 hover:bg-blue-50"
+            >
+              {showStepEditing ? '手順編集を閉じる' : '手順編集を開く'}
+            </Button>
+          </div>
+          
+          {/* 小見出し変更の影響に関する警告 */}
+          <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <h4 className="text-sm font-medium text-yellow-800">重要: 小見出しの変更について</h4>
+                <div className="mt-2 text-sm text-yellow-700">
+                  <p>小見出しのチェックを付け外しすると、手順番号が変更され、既存の画像との紐づけが影響を受ける可能性があります。</p>
+                  <ul className="mt-2 list-disc list-inside space-y-1">
+                    <li>手順から小見出しに変更 → 画像が表示されなくなる</li>
+                    <li>小見出しから手順に変更 → 画像の手順番号が変わる</li>
+                  </ul>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
 
