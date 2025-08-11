@@ -82,39 +82,20 @@ export default function ImagesEditPage() {
       console.log('🔵 教材データ:', materialData);
       setMaterial(materialData); // 教材データを設定
       
-      // 手順データを取得
+      // 手順データを取得（工程3と同じAPIエンドポイントを使用）
       console.log('🔵 recipe_stepsテーブルから手順データを取得中...');
       console.log('🔵 クエリ条件:', { material_id: materialId });
       
-      // まず、recipe_stepsテーブルにデータが存在するか確認
-      const { count: stepsCount, error: countError } = await supabase
-        .from('recipe_steps')
-        .select('*', { count: 'exact', head: true })
-        .eq('material_id', materialId);
-
-      if (countError) {
-        console.error('手順データ件数取得エラー:', countError);
-      } else {
-        console.log('🔵 recipe_stepsテーブルの総件数:', stepsCount);
-      }
-
-      // 実際の手順データを取得
-      const { data: stepsData, error: stepsError } = await supabase
-        .from('recipe_steps')
-        .select('*')
-        .eq('material_id', materialId)
-        .order('step_number', { ascending: true });
-
-      if (stepsError) {
-        console.error('手順データ取得エラー:', stepsError);
-        console.error('エラーの詳細:', {
-          message: stepsError.message,
-          details: stepsError.details,
-          hint: stepsError.hint,
-          code: stepsError.code
-        });
+      // APIエンドポイントを使用して手順データを取得
+      const response = await fetch(`/api/materials/${materialId}/recipe-steps`);
+      if (!response.ok) {
+        console.error('手順データ取得エラー:', response.statusText);
+        setError('手順データの取得に失敗しました');
+        setLoading(false);
         return;
       }
+      
+      const stepsData: RecipeStep[] = await response.json();
 
       console.log('🔵 取得された手順データ:', stepsData);
       console.log('🔵 手順データの件数:', stepsData?.length || 0);
@@ -157,14 +138,20 @@ export default function ImagesEditPage() {
         setSteps([]); // 既存の手順をクリア
         setError(''); // エラーをクリア（手順データが空は正常な状態）
         setLoading(false);
-        return;
+                // returnを削除して、処理を続行
       }
-
+      
       if (stepsData && stepsData.length > 0) {
         // 既存の手順を入力欄に設定
         console.log('既存の手順を入力欄に設定:', stepsData);
         setSteps(stepsData); // 既存の手順を設定
-        setNewSteps(stepsData);
+        // RecipeStepからStepInputに変換
+        const convertedSteps: StepInput[] = stepsData.map(step => ({
+          id: step.id,
+          content: step.content,
+          heading: step.heading || null
+        }));
+        setNewSteps(convertedSteps);
         
         // 変換後の入力データをログ出力
         const convertedData = stepsData.map(step => ({
