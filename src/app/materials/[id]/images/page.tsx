@@ -74,10 +74,13 @@ export default function ImagesEditPage() {
 
       if (materialError) {
         console.error('教材データ取得エラー:', materialError);
+        setError('教材が見つかりません。');
+        setLoading(false);
         return;
       }
 
       console.log('🔵 教材データ:', materialData);
+      setMaterial(materialData); // 教材データを設定
       
       // 手順データを取得
       console.log('🔵 recipe_stepsテーブルから手順データを取得中...');
@@ -147,10 +150,12 @@ export default function ImagesEditPage() {
           console.log('🔍 recipe_stepsテーブルの全データ（最新10件）:', allSteps);
         }
         
-        // 手順データが存在しない場合のエラーメッセージを設定
-        setError('手順データが存在しません。工程3（手順作成）で手順を作成してから、このページにアクセスしてください。');
+        // 手順データが存在しない場合の処理
+        console.log('🔵 手順データが空のため、新規作成モードに切り替え');
         setNewSteps([]); // 空の配列を設定
         setShowStepEditing(true); // 手順編集セクションを自動的に表示
+        setSteps([]); // 既存の手順をクリア
+        setError(''); // エラーをクリア（手順データが空は正常な状態）
         setLoading(false);
         return;
       }
@@ -158,6 +163,7 @@ export default function ImagesEditPage() {
       if (stepsData && stepsData.length > 0) {
         // 既存の手順を入力欄に設定
         console.log('既存の手順を入力欄に設定:', stepsData);
+        setSteps(stepsData); // 既存の手順を設定
         setNewSteps(stepsData);
         
         // 変換後の入力データをログ出力
@@ -749,49 +755,52 @@ export default function ImagesEditPage() {
 
 
         {/* 動画情報（トグル） */}
-        <div className="mb-6">
-          <Collapsible title="動画情報" defaultOpen={false} className="border-gray-300">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <h4 className="font-medium text-gray-900 mb-2">動画タイトル</h4>
-                <p className="text-gray-600">{material.video_title || '未設定'}</p>
+        {material && (
+          <div className="mb-6">
+            <Collapsible title="動画情報" defaultOpen={false} className="border-gray-300">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <h4 className="font-medium text-gray-900 mb-2">動画タイトル</h4>
+                  <p className="text-gray-600">{material.video_title || '未設定'}</p>
+                </div>
+                <div>
+                  <h4 className="font-medium text-gray-900 mb-2">動画URL</h4>
+                  <p className="text-gray-600">{material.youtube_url || '未設定'}</p>
+                </div>
+                <div className="md:col-span-2">
+                  <h4 className="font-medium text-gray-900 mb-2">動画説明</h4>
+                  <p className="text-gray-600">{material.video_description || '未設定'}</p>
+                </div>
               </div>
-              <div>
-                <h4 className="font-medium text-gray-900 mb-2">動画URL</h4>
-                <p className="text-gray-600">{material.youtube_url || '未設定'}</p>
-              </div>
-              <div className="md:col-span-2">
-                <h4 className="font-medium text-gray-900 mb-2">動画説明</h4>
-                <p className="text-gray-600">{material.video_description || '未設定'}</p>
-              </div>
-            </div>
-          </Collapsible>
-        </div>
+            </Collapsible>
+          </div>
+        )}
 
         {/* 作成指示と備考（横並び） */}
-        <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-white rounded-lg shadow-md p-6 border-2 border-red-200">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">作成指示</h3>
-            <p className="text-gray-700 whitespace-pre-wrap">
-              {material.instruction || '作成指示がありません'}
-            </p>
-          </div>
-          <div className="bg-white rounded-lg shadow-md p-6 border-2 border-blue-200">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">備考</h3>
-              <Button
-                onClick={() => setEditingNote(!editingNote)}
-                variant="outline"
-                size="sm"
-                className="text-blue-600 border-blue-300 hover:bg-blue-50"
-              >
-                {editingNote ? 'キャンセル' : '編集'}
-              </Button>
+        {material && (
+          <div className="mb-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-white rounded-lg shadow-md p-6 border-2 border-red-200">
+              <h3 className="text-lg font-semibold text-gray-900 mb-4">作成指示</h3>
+              <p className="text-gray-700 whitespace-pre-wrap">
+                {material.instruction || '作成指示がありません'}
+              </p>
             </div>
-            {editingNote ? (
-              <div className="space-y-3">
-                <Textarea
-                  value={noteText}
+            <div className="bg-white rounded-lg shadow-md p-6 border-2 border-blue-200">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">備考</h3>
+                <Button
+                  onClick={() => setEditingNote(!editingNote)}
+                  variant="outline"
+                  size="sm"
+                  className="text-blue-600 border-blue-300 hover:bg-blue-50"
+                >
+                  {editingNote ? 'キャンセル' : '編集'}
+                </Button>
+              </div>
+              {editingNote ? (
+                <div className="space-y-3">
+                  <Textarea
+                    value={noteText}
                   onChange={(e) => setNoteText(e.target.value)}
                   placeholder="備考を入力してください"
                   rows={4}
@@ -824,6 +833,7 @@ export default function ImagesEditPage() {
             )}
           </div>
         </div>
+        )}
 
         {/* 手順編集セクション */}
         <div className="mb-8">
