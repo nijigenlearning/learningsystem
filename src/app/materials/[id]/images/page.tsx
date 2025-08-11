@@ -225,59 +225,41 @@ export default function ImagesEditPage() {
         }));
         console.log('変換後の入力データ:', convertedData);
 
-        // 手順番号マッピングを作成（UIの手順番号を1から開始）
-        const mapping = new Map<number, number>();
-        let uiStepNumber = 1; // UIの手順番号を1から開始
+        // 手順番号マッピングを作成
+        console.log('🔵 手順番号マッピング作成開始');
+        const mapping = new Map();
         
-        console.log('🔵 手順番号マッピング作成開始:');
-        stepsData.forEach((step: RecipeStep, index: number) => {
-          console.log(`手順${index}:`, {
-            content: step.content,
-            heading: step.heading,
-            step_number: step.step_number,
-            step_number_type: typeof step.step_number,
-            isHeading: !!step.heading,
-            step_number_lt_9999: step.step_number < 9999
+        // 完了状態の場合は、既存の手順データからマッピングを作成
+        if (material && material.image_registration === 'completed') {
+          console.log('🔵 完了状態: 既存手順データからマッピングを作成');
+          steps.forEach((step, index) => {
+            // 小見出しも含めて、すべてのステップをマッピングに追加
+            const uiIndex = index + 1;
+            const dbStepNumber = step.step_number;
+            mapping.set(uiIndex, dbStepNumber);
+            console.log(`✅ マッピング追加: UI[${uiIndex}] -> DB[${dbStepNumber}] (${step.heading ? '小見出し' : '手順'})`);
           });
-          
-          if (!step.heading && step.step_number < 9999) {
-            // UIの手順番号（1, 2, 3...）をデータベースのstep_numberにマッピング
-            mapping.set(uiStepNumber, step.step_number);
-            console.log(`✅ マッピング追加: UI[${uiStepNumber}] -> DB[${step.step_number}]`);
-            uiStepNumber++; // 次のUI手順番号
-          } else {
-            console.log(`❌ マッピング除外: UI[${uiStepNumber}] (小見出しまたは9999以上)`);
-          }
-        });
+        } else {
+          // 通常状態の場合は、非小見出しステップのみマッピングに追加
+          steps.forEach((step, index) => {
+            if (!step.heading && step.step_number < 9999) {
+              const uiIndex = index + 1;
+              const dbStepNumber = step.step_number;
+              mapping.set(uiIndex, dbStepNumber);
+              console.log(`✅ マッピング追加: UI[${uiIndex}] -> DB[${dbStepNumber}]`);
+            } else {
+              console.log(`❌ マッピング除外: UI[${index + 1}] (小見出しまたは9999以上)`);
+            }
+          });
+        }
+        
+        setStepNumberMapping(mapping);
+        console.log('🔵 最終的な手順番号マッピング:', Object.fromEntries(mapping));
         
         // 完了状態から再編集時は、手順番号マッピングを再構築
         if (material && material.image_registration === 'completed') {
           console.log('🔵 完了状態から再編集のため、手順番号マッピングを再構築');
-          
-          // 完了状態では、既存の手順データを正しく表示するために
-          // 手順番号マッピングを再構築
-          const completedMapping = new Map<number, number>();
-          let completedUiStepNumber = 1;
-          
-          stepsData.forEach((step: RecipeStep) => {
-            if (!step.heading && step.step_number < 9999) {
-              completedMapping.set(completedUiStepNumber, step.step_number);
-              console.log(`🔵 完了状態マッピング: UI[${completedUiStepNumber}] -> DB[${step.step_number}]`);
-              completedUiStepNumber++;
-            }
-          });
-          
-          if (completedMapping.size > 0) {
-            setStepNumberMapping(completedMapping);
-            console.log('🔵 完了状態用の手順番号マッピング:', Object.fromEntries(completedMapping));
-          } else {
-            console.warn('⚠️ 完了状態で有効な手順番号マッピングが作成できませんでした');
-            // フォールバック: 元のマッピングを使用
-            setStepNumberMapping(mapping);
-          }
         } else {
-          // 通常の場合は、基本のマッピングを設定
-          setStepNumberMapping(mapping);
           console.log('🔵 通常状態用の手順番号マッピング:', Object.fromEntries(mapping));
         }
         
@@ -291,36 +273,63 @@ export default function ImagesEditPage() {
         
         // 各手順の画像を取得
         console.log('🔵 各手順の画像を取得中...');
-        const imagePromises = stepsData.map(async (step) => {
-          if (!step.id) {
-            console.warn('手順にIDがありません:', step);
-            return;
-          }
+        
+        // 完了状態の場合は、既存の手順データから画像を取得
+        if (material && material.image_registration === 'completed') {
+          console.log('🔵 完了状態: 既存手順データから画像を取得');
           
-          console.log(`🔵 手順${step.step_number}の画像を取得中...`, { step_id: step.id });
-          
-          const { data: images, error: imagesError } = await supabase
+          // まず、material_imagesテーブルから画像データを取得
+          const { data: allImages, error: imagesError } = await supabase
             .from('material_images')
             .select('*')
-            .eq('step_id', step.id)
+            .eq('material_id', materialId)
             .order('order', { ascending: true });
           
           if (imagesError) {
-            console.error(`手順${step.step_number}の画像取得エラー:`, imagesError);
-            return;
+            console.error('画像データ取得エラー:', imagesError);
+          } else {
+            console.log('🔵 取得された画像データ:', allImages);
+            
+            const stepImagesMap: { [key: string]: MaterialImage[] } = {};
+            
+            for (const step of steps) {
+              const stepId = step.id;
+              const stepNumber = step.step_number;
+              
+              console.log(`🔍 手順${stepNumber} (ID: ${stepId}) の画像を検索中...`);
+              
+              // step_idで画像を検索
+              let images = allImages.filter((img: MaterialImage) => img.step_id === stepId);
+              console.log(`🔍 step_id検索結果: ${images.length}件`);
+              
+              // 画像が見つからない場合は、step_numberで検索（フォールバック）
+              if (images.length === 0) {
+                console.log(`🔍 step_idで画像が見つからないため、step_number ${stepNumber} で検索`);
+                // step_idが数値として保存されている可能性があるため、数値比較も試行
+                images = allImages.filter((img: MaterialImage) => {
+                  const imgStepId = typeof img.step_id === 'string' ? parseInt(img.step_id, 10) : Number(img.step_id);
+                  return !isNaN(imgStepId) && imgStepId === stepNumber;
+                });
+                console.log(`🔍 step_number検索結果: ${images.length}件`);
+              }
+              
+              stepImagesMap[stepId] = images;
+              console.log(`✅ 手順${stepNumber}: ${images.length}件の画像を取得`);
+            }
+            
+            setStepImages(stepImagesMap);
           }
-          
-          console.log(`🔵 手順${step.step_number}の画像:`, images);
-          
-          if (images && images.length > 0) {
-            setStepImages(prev => ({
-              ...prev,
-              [step.id!]: images
-            }));
-          }
-        });
+        } else {
+          // 通常状態の場合は、新規作成用の画像マップを初期化
+          const stepImagesMap: { [key: string]: MaterialImage[] } = {};
+          newSteps.forEach((step, index) => {
+            if (!step.heading) {
+              stepImagesMap[`temp-${index + 1}`] = [];
+            }
+          });
+          setStepImages(stepImagesMap);
+        }
         
-        await Promise.all(imagePromises);
         console.log('🔵 全手順の画像取得完了');
         
         // 完了状態から再編集時は、画像の表示を最適化
