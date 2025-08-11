@@ -250,7 +250,13 @@ export default function ImagesEditPage() {
           }
         });
         
-        setStepNumberMapping(mapping);
+        // 完了状態の場合は、手順番号マッピングを優先的に設定
+        if (material && material.image_registration === 'completed') {
+          console.log('🔵 完了状態: 手順番号マッピングを優先的に設定');
+          setStepNumberMapping(mapping);
+        } else {
+          setStepNumberMapping(mapping);
+        }
         console.log('🔵 最終的な手順番号マッピング:', Object.fromEntries(mapping));
         
         // 完了状態から再編集時は、手順番号マッピングを再構築
@@ -265,6 +271,7 @@ export default function ImagesEditPage() {
           stepsData.forEach((step: RecipeStep) => {
             if (!step.heading && step.step_number < 9999) {
               completedMapping.set(completedUiStepNumber, step.step_number);
+              console.log(`🔵 完了状態マッピング: UI[${completedUiStepNumber}] -> DB[${step.step_number}]`);
               completedUiStepNumber++;
             }
           });
@@ -272,6 +279,10 @@ export default function ImagesEditPage() {
           if (completedMapping.size > 0) {
             setStepNumberMapping(completedMapping);
             console.log('🔵 完了状態用の手順番号マッピング:', Object.fromEntries(completedMapping));
+          } else {
+            console.warn('⚠️ 完了状態で有効な手順番号マッピングが作成できませんでした');
+            // フォールバック: 元のマッピングを使用
+            setStepNumberMapping(mapping);
           }
         }
         
@@ -1121,7 +1132,23 @@ export default function ImagesEditPage() {
                   <div className="space-y-6 max-h-96 overflow-y-auto">
                     {newSteps.map((step, index) => {
                       // マッピングから正しいstep_numberを取得（UIの手順番号を1から開始）
-                      const stepNumber = stepNumberMapping.get(index + 1) || (index + 1);
+                      let stepNumber = stepNumberMapping.get(index + 1);
+                      
+                      // 手順番号マッピングが正しく設定されていない場合のフォールバック
+                      if (stepNumber === undefined || stepNumber === null) {
+                        // 完了状態の場合は、データベースのstep_numberを直接使用
+                        if (material && material.image_registration === 'completed' && step.id) {
+                          // 既存の手順データからstep_numberを取得
+                          const existingStep = steps.find(s => s.id === step.id);
+                          if (existingStep && existingStep.step_number < 9999) {
+                            stepNumber = existingStep.step_number;
+                          } else {
+                            stepNumber = index + 1; // フォールバック
+                          }
+                        } else {
+                          stepNumber = index + 1; // フォールバック
+                        }
+                      }
                       
                       console.log(`🔵 ステップ${index}の詳細:`, {
                         content: step.content,
@@ -1129,7 +1156,8 @@ export default function ImagesEditPage() {
                         mappedStepNumber: stepNumberMapping.get(index + 1),
                         fallbackStepNumber: index + 1,
                         finalStepNumber: stepNumber,
-                        stepNumberMapping: Array.from(stepNumberMapping.entries())
+                        stepNumberMapping: Array.from(stepNumberMapping.entries()),
+                        existingStep: step.id ? steps.find(s => s.id === step.id) : null
                       });
                       
                       // 画像の取得方法を改善
@@ -1138,6 +1166,18 @@ export default function ImagesEditPage() {
                         // 既存の手順IDがある場合は、そのIDで画像を検索
                         images = stepImages[step.id] || [];
                         console.log(`🔵 既存手順ID ${step.id} の画像:`, images);
+                        
+                        // 完了状態から再編集時は、step_numberでも画像を検索
+                        if (images.length === 0 && material && material.image_registration === 'completed') {
+                          const stepImagesForNumber = Object.values(stepImages).flat().filter(img => {
+                            const imgStepId = typeof img.step_id === 'string' ? parseInt(img.step_id, 10) : Number(img.step_id);
+                            return imgStepId === stepNumber;
+                          });
+                          if (stepImagesForNumber.length > 0) {
+                            images = stepImagesForNumber;
+                            console.log(`🔵 step_number ${stepNumber} での画像検索結果:`, images);
+                          }
+                        }
                       } else {
                         // 新規作成中の手順の場合は、step_numberで画像を検索
                         // 一時的なキー（temp-{stepNumber}）で画像を検索
