@@ -133,12 +133,67 @@ export default function ImagesEditPage() {
         
         // 手順データが存在しない場合の処理
         console.log('🔵 手順データが空のため、新規作成モードに切り替え');
-        setNewSteps([]); // 空の配列を設定
+        
+        // デフォルトの手順を作成（より実用的な内容）
+        const defaultSteps: StepInput[] = [
+          { content: '作業の準備をします。必要な道具や材料を揃えてください。', heading: null },
+          { content: '基本的な作業手順を実行します。注意深く進めてください。', heading: null },
+          { content: '作業の仕上げを行います。最終確認を忘れずに。', heading: null }
+        ];
+        
+        setNewSteps(defaultSteps); // デフォルトの手順を設定
         setShowStepEditing(true); // 手順編集セクションを自動的に表示
         setSteps([]); // 既存の手順をクリア
         setError(''); // エラーをクリア（手順データが空は正常な状態）
+        
+        // 手順番号マッピングを初期化（新規作成時は1,2,3の順番で設定）
+        const defaultMapping = new Map<number, number>();
+        defaultMapping.set(1, 1);
+        defaultMapping.set(2, 2);
+        defaultMapping.set(3, 3);
+        setStepNumberMapping(defaultMapping);
+        
+        // 既存の画像がある場合は、step_numberで検索して表示
+        console.log('🔵 既存画像の確認中...');
+        const { data: existingImages, error: imagesError } = await supabase
+          .from('material_images')
+          .select('*')
+          .eq('material_id', materialId)
+          .order('step_id', { ascending: true })
+          .order('order', { ascending: true });
+        
+        if (!imagesError && existingImages && existingImages.length > 0) {
+          console.log('🔵 既存画像を発見:', existingImages);
+          
+          // step_numberでグループ化して画像を整理
+          const imagesByStepNumber: {[key: number]: MaterialImage[]} = {};
+          existingImages.forEach(img => {
+            const stepNumber = typeof img.step_id === 'string' ? parseInt(img.step_id, 10) : Number(img.step_id);
+            if (!isNaN(stepNumber) && stepNumber < 9999) {
+              if (!imagesByStepNumber[stepNumber]) {
+                imagesByStepNumber[stepNumber] = [];
+              }
+              imagesByStepNumber[stepNumber].push(img);
+            }
+          });
+          
+          console.log('🔵 step_number別画像:', imagesByStepNumber);
+          
+          // 新規作成中の手順に画像を関連付ける（一時的なキーを使用）
+          const tempStepImages: {[key: string]: MaterialImage[]} = {};
+          defaultSteps.forEach((step, index) => {
+            const stepNumber = index + 1;
+            if (imagesByStepNumber[stepNumber]) {
+              // 一時的なIDを使用して画像を関連付け
+              tempStepImages[`temp-${stepNumber}`] = imagesByStepNumber[stepNumber];
+            }
+          });
+          
+          setStepImages(tempStepImages);
+        }
+        
         setLoading(false);
-                // returnを削除して、処理を続行
+        return; // 手順データが空の場合はここで終了
       }
       
       if (stepsData && stepsData.length > 0) {
@@ -189,6 +244,29 @@ export default function ImagesEditPage() {
         setStepNumberMapping(mapping);
         console.log('🔵 最終的な手順番号マッピング:', Object.fromEntries(mapping));
         
+        // 完了状態から再編集時は、手順編集セクションを表示
+        if (material && material.image_registration === 'completed') {
+          console.log('🔵 完了状態から再編集のため、手順編集セクションを表示');
+          setShowStepEditing(true);
+          
+          // 完了状態では、既存の手順データを正しく表示するために
+          // 手順番号マッピングを再構築
+          const completedMapping = new Map<number, number>();
+          let completedUiStepNumber = 1;
+          
+          stepsData.forEach((step: RecipeStep) => {
+            if (!step.heading && step.step_number < 9999) {
+              completedMapping.set(completedUiStepNumber, step.step_number);
+              completedUiStepNumber++;
+            }
+          });
+          
+          if (completedMapping.size > 0) {
+            setStepNumberMapping(completedMapping);
+            console.log('🔵 完了状態用の手順番号マッピング:', Object.fromEntries(completedMapping));
+          }
+        }
+        
         // 各手順の画像を取得
         console.log('🔵 各手順の画像を取得中...');
         const imagePromises = stepsData.map(async (step) => {
@@ -222,13 +300,38 @@ export default function ImagesEditPage() {
         
         await Promise.all(imagePromises);
         console.log('🔵 全手順の画像取得完了');
+        
+        // 完了状態から再編集時は、画像の表示を最適化
+        if (material && material.image_registration === 'completed') {
+          console.log('🔵 完了状態から再編集時の画像表示最適化');
+          
+          // 既存の画像データを確認
+          const currentStepImages = { ...stepImages };
+          console.log('🔵 現在のstepImages:', currentStepImages);
+          
+          // 手順番号マッピングに基づいて画像を再整理
+          const optimizedStepImages: {[key: string]: MaterialImage[]} = {};
+          
+          stepsData.forEach((step) => {
+            if (step.id && currentStepImages[step.id]) {
+              optimizedStepImages[step.id] = currentStepImages[step.id];
+              console.log(`🔵 手順ID ${step.id} の画像を最適化:`, currentStepImages[step.id]);
+            }
+          });
+          
+          if (Object.keys(optimizedStepImages).length > 0) {
+            setStepImages(optimizedStepImages);
+            console.log('🔵 最適化後のstepImages:', optimizedStepImages);
+          }
+        }
       }
     } catch (error) {
       console.error('データ取得エラー:', error);
+      setError('データの取得に失敗しました');
     } finally {
       setLoading(false);
     }
-  }, [materialId, supabase]);
+  }, [materialId]);
 
   const updateNewStep = (index: number, field: keyof StepInput, value: string | null) => {
     const updatedSteps = [...newSteps];
@@ -301,6 +404,48 @@ export default function ImagesEditPage() {
       if (!saveResponse.ok) {
         throw new Error('手順の保存に失敗しました');
       }
+
+      const savedSteps = await saveResponse.json();
+      console.log('🔵 保存された手順:', savedSteps);
+
+      // 保存された手順のIDをnewStepsに反映
+      const updatedNewSteps = newSteps.map((step, index) => ({
+        ...step,
+        id: savedSteps[index]?.id || step.id
+      }));
+      setNewSteps(updatedNewSteps);
+
+      // 手順番号マッピングを更新
+      const newMapping = new Map<number, number>();
+      let uiStepNumber = 1;
+      savedSteps.forEach((savedStep: RecipeStep, index: number) => {
+        if (!updatedNewSteps[index].heading && savedStep.step_number < 9999) {
+          newMapping.set(uiStepNumber, savedStep.step_number);
+          uiStepNumber++;
+        }
+      });
+      setStepNumberMapping(newMapping);
+
+      // 保存後に既存の画像を新しい手順IDに関連付ける
+      console.log('🔵 保存後の画像関連付け処理開始');
+      const currentStepImages = { ...stepImages };
+      
+      // 一時的なキーで保存されていた画像を、新しい手順IDに関連付ける
+      Object.keys(currentStepImages).forEach(key => {
+        if (key.startsWith('temp-')) {
+          const stepNumber = parseInt(key.replace('temp-', ''), 10);
+          const correspondingStep = updatedNewSteps[stepNumber - 1];
+          
+          if (correspondingStep && correspondingStep.id && !correspondingStep.heading) {
+            console.log(`🔵 一時キー ${key} の画像を手順ID ${correspondingStep.id} に関連付け`);
+            currentStepImages[correspondingStep.id] = currentStepImages[key];
+            delete currentStepImages[key];
+          }
+        }
+      });
+      
+      setStepImages(currentStepImages);
+      console.log('🔵 更新後のstepImages:', currentStepImages);
 
       setSuccess('手順を一時保存しました');
       setTimeout(() => setSuccess(''), 3000);
@@ -632,7 +777,7 @@ export default function ImagesEditPage() {
       // 教材のimage_revisionステータスを更新
       const { error } = await supabase
         .from('materials')
-        .update({ image_revision: 'completed' })
+        .update({ image_registration: 'completed' })
         .eq('id', materialId);
 
       if (error) throw error;
@@ -708,25 +853,28 @@ export default function ImagesEditPage() {
             </p>
             <div className="mt-3 space-x-2">
               <Button
-                onClick={() => setShowStepEditing(true)}
+                onClick={() => {
+                  // デフォルトの手順を作成
+                  const defaultSteps: StepInput[] = [
+                    { content: '作業の準備をします。必要な道具や材料を揃えてください。', heading: null },
+                    { content: '基本的な作業手順を実行します。注意深く進めてください。', heading: null },
+                    { content: '作業の仕上げを行います。最終確認を忘れずに。', heading: null }
+                  ];
+                  setNewSteps(defaultSteps);
+                  setShowStepEditing(true);
+                  
+                  // 手順番号マッピングを初期化
+                  const defaultMapping = new Map<number, number>();
+                  defaultMapping.set(1, 1);
+                  defaultMapping.set(2, 2);
+                  defaultMapping.set(3, 3);
+                  setStepNumberMapping(defaultMapping);
+                  
+                  setError(''); // エラーメッセージをクリア
+                }}
                 className="bg-yellow-600 hover:bg-yellow-700"
               >
                 手順を登録する
-              </Button>
-              <Button
-                onClick={() => {
-                  setNewSteps([
-                    { content: '手順1の内容を入力してください', heading: null },
-                    { content: '手順2の内容を入力してください', heading: null },
-                    { content: '手順3の内容を入力してください', heading: null }
-                  ]);
-                  setShowStepEditing(true);
-                  setError(''); // エラーメッセージをクリア
-                }}
-                variant="outline"
-                className="border-yellow-600 text-yellow-600 hover:bg-yellow-50"
-              >
-                サンプル手順を追加
               </Button>
               <Button
                 onClick={() => router.push(`/materials/${materialId}/steps`)}
@@ -739,7 +887,25 @@ export default function ImagesEditPage() {
           </div>
         )}
 
-
+        {/* 完了状態からの再編集時のメッセージ */}
+        {!loading && material && material.image_registration === 'completed' && newSteps.length > 0 && (
+          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
+                <svg className="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div className="ml-3">
+                <h4 className="text-sm font-medium text-blue-800">進捗状況の編集</h4>
+                <div className="mt-2 text-sm text-blue-700">
+                  <p>工程4の画像登録が完了済みです。手順や画像の内容を編集できます。</p>
+                  <p className="mt-1">手順編集セクションを開いて、必要に応じて手順や画像を修正してください。</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* 動画情報（トグル） */}
         {material && (
@@ -839,7 +1005,7 @@ export default function ImagesEditPage() {
             )}
           </div>
           
-                    {/* 手順データが空の場合は強制的に手順編集セクションを表示 */}
+          {/* 手順データが空の場合、または手順編集が有効な場合は手順編集セクションを表示 */}
           {(showStepEditing || newSteps.length === 0) && (
             <>
               {/* 小見出し変更の影響に関する警告 */}
@@ -962,22 +1128,47 @@ export default function ImagesEditPage() {
                       console.log(`🔵 ステップ${index}の詳細:`, {
                         content: step.content,
                         heading: step.heading,
-                        mappedStepNumber: stepNumberMapping.get(index),
+                        mappedStepNumber: stepNumberMapping.get(index + 1),
                         fallbackStepNumber: index + 1,
                         finalStepNumber: stepNumber,
                         stepNumberMapping: Array.from(stepNumberMapping.entries())
                       });
                       
-                      const images = step.id ? (stepImages[step.id] || []) : [];
+                      // 画像の取得方法を改善
+                      let images: MaterialImage[] = [];
+                      if (step.id) {
+                        // 既存の手順IDがある場合は、そのIDで画像を検索
+                        images = stepImages[step.id] || [];
+                        console.log(`🔵 既存手順ID ${step.id} の画像:`, images);
+                      } else {
+                        // 新規作成中の手順の場合は、step_numberで画像を検索
+                        // 一時的なキー（temp-{stepNumber}）で画像を検索
+                        const tempKey = `temp-${stepNumber}`;
+                        images = stepImages[tempKey] || [];
+                        console.log(`🔵 新規手順 ${stepNumber} の画像（一時キー: ${tempKey}）:`, images);
+                        
+                        // 一時キーで見つからない場合は、step_numberで直接検索
+                        if (images.length === 0) {
+                          const stepImagesForNumber = Object.values(stepImages).flat().filter(img => {
+                            // step_idが数値の場合と文字列の場合の両方に対応
+                            const imgStepId = typeof img.step_id === 'string' ? parseInt(img.step_id, 10) : Number(img.step_id);
+                            return imgStepId === stepNumber;
+                          });
+                          images = stepImagesForNumber;
+                          console.log(`🔵 step_number ${stepNumber} での直接検索結果:`, images);
+                        }
+                      }
                       
                       console.log(`🔵 ステップ${index}の画像検索結果:`, {
                         stepNumber,
+                        stepId: step.id,
+                        tempKey: step.id ? null : `temp-${stepNumber}`,
                         images,
                         allStepImages: stepImages
                       });
 
                       return (
-                        <div key={step.id} className={`${step.heading ? '' : 'border rounded-lg'} p-4`}>
+                        <div key={step.id || `new-${index}`} className={`${step.heading ? '' : 'border rounded-lg'} p-4`}>
                           <div className="flex items-center gap-2 mb-3">
                             {!step.heading && (
                               <span className="text-sm font-medium text-white bg-gray-900 px-2 py-1 rounded">
@@ -1034,10 +1225,10 @@ export default function ImagesEditPage() {
                                               handleImageDelete(image.id, step.id);
                                             } else {
                                               console.error('ステップIDが存在しません:', step);
-                                              setError('ステップIDが存在しません。');
+                                              setError('ステップIDが存在しません。手順を保存してから画像を削除してください。');
                                             }
                                           }}
-                                          className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600"
+                                          className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-600"
                                         >
                                           <X className="w-3 h-3" />
                                         </button>
