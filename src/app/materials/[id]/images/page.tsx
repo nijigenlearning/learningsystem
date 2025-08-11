@@ -208,6 +208,15 @@ export default function ImagesEditPage() {
         }));
         setNewSteps(convertedSteps);
         
+        // 既存の手順がある場合は、手順編集セクションを自動的に表示
+        setShowStepEditing(true);
+        
+        // 完了状態から再編集時は、手順編集セクションを確実に表示
+        if (material && material.image_registration === 'completed') {
+          console.log('🔵 完了状態から再編集のため、手順編集セクションを確実に表示');
+          // 既にsetShowStepEditing(true)が呼ばれているため、重複は不要
+        }
+        
         // 変換後の入力データをログ出力
         const convertedData = stepsData.map(step => ({
           ...step,
@@ -244,10 +253,9 @@ export default function ImagesEditPage() {
         setStepNumberMapping(mapping);
         console.log('🔵 最終的な手順番号マッピング:', Object.fromEntries(mapping));
         
-        // 完了状態から再編集時は、手順編集セクションを表示
+        // 完了状態から再編集時は、手順番号マッピングを再構築
         if (material && material.image_registration === 'completed') {
-          console.log('🔵 完了状態から再編集のため、手順編集セクションを表示');
-          setShowStepEditing(true);
+          console.log('🔵 完了状態から再編集のため、手順番号マッピングを再構築');
           
           // 完了状態では、既存の手順データを正しく表示するために
           // 手順番号マッピングを再構築
@@ -994,19 +1002,11 @@ export default function ImagesEditPage() {
             <h3 className="text-lg font-semibold text-gray-900">
               {newSteps.length === 0 ? '手順の作成' : '手順の編集'}
             </h3>
-            {newSteps.length > 0 && (
-              <Button
-                onClick={() => setShowStepEditing(!showStepEditing)}
-                variant="outline"
-                className="text-blue-600 border-blue-300 hover:bg-blue-50"
-              >
-                {showStepEditing ? '手順編集を閉じる' : '手順編集を開く'}
-              </Button>
-            )}
+            {/* 手順データが存在する場合は、手順編集セクションが常に表示されるため、ボタンは不要 */}
           </div>
           
-          {/* 手順データが空の場合、または手順編集が有効な場合は手順編集セクションを表示 */}
-          {(showStepEditing || newSteps.length === 0) && (
+          {/* 手順データが存在する場合は常に手順編集セクションを表示 */}
+          {showStepEditing && (
             <>
               {/* 小見出し変更の影響に関する警告 */}
               <div className="mb-4 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
@@ -1032,8 +1032,7 @@ export default function ImagesEditPage() {
               {/* 手順と画像の2列レイアウト */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start mb-8">
                 {/* 左列：手順編集 */}
-                {showStepEditing && (
-                  <div className="bg-white rounded-lg shadow-md p-6 border border-gray-300">
+                <div className="bg-white rounded-lg shadow-md p-6 border border-gray-300">
                     <div className="flex items-center justify-between mb-4">
                       <h3 className="text-lg font-semibold text-gray-900">手順作成</h3>
                       <Button
@@ -1105,7 +1104,6 @@ export default function ImagesEditPage() {
                       </Button>
                     </div>
                   </div>
-                )}
 
                 {/* 右列：画像アップロード */}
                 <div className={`bg-white rounded-lg shadow-md p-6 border border-gray-300 ${!showStepEditing ? 'lg:col-span-2' : ''}`}>
