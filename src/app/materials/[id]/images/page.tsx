@@ -746,20 +746,7 @@ export default function ImagesEditPage() {
           </div>
         )}
 
-        {/* エラーメッセージの表示 */}
-        {error && (
-          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-            <p className="text-red-800">{error}</p>
-            <div className="mt-3">
-              <Button
-                onClick={() => router.push(`/materials/${materialId}/steps`)}
-                className="bg-red-600 hover:bg-red-700"
-              >
-                工程3（手順作成）に移動
-              </Button>
-            </div>
-          </div>
-        )}
+
 
         {/* 動画情報（トグル） */}
         <div className="mb-6">
@@ -838,7 +825,7 @@ export default function ImagesEditPage() {
           </div>
         </div>
 
-                  {/* 手順編集セクション */}
+        {/* 手順編集セクション */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-gray-900">
@@ -855,7 +842,7 @@ export default function ImagesEditPage() {
             )}
           </div>
           
-          {/* 手順データが空の場合は強制的に手順編集セクションを表示 */}
+                    {/* 手順データが空の場合は強制的に手順編集セクションを表示 */}
           {(showStepEditing || newSteps.length === 0) && (
             <>
               {/* 小見出し変更の影響に関する警告 */}
@@ -879,225 +866,225 @@ export default function ImagesEditPage() {
                 </div>
               </div>
 
-          {/* 手順と画像の2列レイアウト */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start mb-8">
-            {/* 左列：手順編集 */}
-            {showStepEditing && (
-              <div className="bg-white rounded-lg shadow-md p-6 border border-gray-300">
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-lg font-semibold text-gray-900">手順作成</h3>
-                  <Button
-                    onClick={addNewStep}
-                    variant="outline"
-                    size="sm"
-                    className="flex items-center gap-2"
-                  >
-                    <Plus className="w-4 h-4" />
-                    手順追加
-                  </Button>
-                </div>
+              {/* 手順と画像の2列レイアウト */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start mb-8">
+                {/* 左列：手順編集 */}
+                {showStepEditing && (
+                  <div className="bg-white rounded-lg shadow-md p-6 border border-gray-300">
+                    <div className="flex items-center justify-between mb-4">
+                      <h3 className="text-lg font-semibold text-gray-900">手順作成</h3>
+                      <Button
+                        onClick={addNewStep}
+                        variant="outline"
+                        size="sm"
+                        className="flex items-center gap-2"
+                      >
+                        <Plus className="w-4 h-4" />
+                        手順追加
+                      </Button>
+                    </div>
 
-                <div className="space-y-4">
-                  {newSteps.map((step, index) => (
-                    <div key={step.id || index} className="border rounded-lg p-4">
-                      <div className="flex items-center gap-4 mb-2">
-                        {!step.heading && (
-                          <span className="text-sm font-medium text-white bg-gray-900 px-2 py-1 rounded">
-                            {stepNumberMapping.get(index + 1) || (index + 1)}
-                          </span>
-                        )}
-                        <label className="flex items-center gap-2">
-                          <input
-                            type="checkbox"
-                            checked={!!step.heading}
-                            onChange={(e) => updateNewStep(index, 'heading', e.target.checked ? step.content : null)}
-                            className="rounded"
+                    <div className="space-y-4">
+                      {newSteps.map((step, index) => (
+                        <div key={step.id || index} className="border rounded-lg p-4">
+                          <div className="flex items-center gap-4 mb-2">
+                            {!step.heading && (
+                              <span className="text-sm font-medium text-white bg-gray-900 px-2 py-1 rounded">
+                                {stepNumberMapping.get(index + 1) || (index + 1)}
+                              </span>
+                            )}
+                            <label className="flex items-center gap-2">
+                              <input
+                                type="checkbox"
+                                checked={!!step.heading}
+                                onChange={(e) => updateNewStep(index, 'heading', e.target.checked ? step.content : null)}
+                                className="rounded"
+                              />
+                              <span className="text-sm font-medium">
+                                小見出しにする
+                              </span>
+                            </label>
+                            {newSteps.length > 1 && (
+                              <Button
+                                onClick={() => removeNewStep(index)}
+                                variant="outline"
+                                size="sm"
+                                className="text-red-600 border-red-300 hover:bg-red-50"
+                              >
+                                <X className="w-4 h-4" />
+                              </Button>
+                            )}
+                          </div>
+                          <Textarea
+                            value={step.content}
+                            onChange={(e) => updateNewStep(index, 'content', e.target.value)}
+                            placeholder={step.heading ? "小見出しを入力してください" : "詳細手順を入力してください"}
+                            rows={3}
+                            className="w-full"
                           />
-                          <span className="text-sm font-medium">
-                            小見出しにする
-                          </span>
-                        </label>
-                        {newSteps.length > 1 && (
-                          <Button
-                            onClick={() => removeNewStep(index)}
-                            variant="outline"
-                            size="sm"
-                            className="text-red-600 border-red-300 hover:bg-red-50"
-                          >
-                            <X className="w-4 h-4" />
-                          </Button>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="mt-6 space-y-3">
+                      <Button
+                        onClick={handleTemporarySave}
+                        disabled={saving || completing || newSteps.every(step => !step.content.trim())}
+                        variant="outline"
+                        className="w-full flex items-center gap-2"
+                      >
+                        {saving ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <Save className="w-4 h-4" />
                         )}
-                      </div>
-                      <Textarea
-                        value={step.content}
-                        onChange={(e) => updateNewStep(index, 'content', e.target.value)}
-                        placeholder={step.heading ? "小見出しを入力してください" : "詳細手順を入力してください"}
-                        rows={3}
+                        一時保存
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {/* 右列：画像アップロード */}
+                <div className={`bg-white rounded-lg shadow-md p-6 border border-gray-300 ${!showStepEditing ? 'lg:col-span-2' : ''}`}>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-gray-900">手順別画像登録</h3>
+                    <Button
+                      onClick={() => setShowStepEditing(!showStepEditing)}
+                      variant="outline"
+                      size="sm"
+                      className="flex items-center gap-2"
+                    >
+                      {showStepEditing ? '手順編集を閉じる' : '手順編集'}
+                    </Button>
+                  </div>
+                  <div className="space-y-6 max-h-96 overflow-y-auto">
+                    {newSteps.map((step, index) => {
+                      // マッピングから正しいstep_numberを取得（UIの手順番号を1から開始）
+                      const stepNumber = stepNumberMapping.get(index + 1) || (index + 1);
+                      
+                      console.log(`🔵 ステップ${index}の詳細:`, {
+                        content: step.content,
+                        heading: step.heading,
+                        mappedStepNumber: stepNumberMapping.get(index),
+                        fallbackStepNumber: index + 1,
+                        finalStepNumber: stepNumber,
+                        stepNumberMapping: Array.from(stepNumberMapping.entries())
+                      });
+                      
+                      const images = step.id ? (stepImages[step.id] || []) : [];
+                      
+                      console.log(`🔵 ステップ${index}の画像検索結果:`, {
+                        stepNumber,
+                        images,
+                        allStepImages: stepImages
+                      });
+
+                      return (
+                        <div key={step.id} className={`${step.heading ? '' : 'border rounded-lg'} p-4`}>
+                          <div className="flex items-center gap-2 mb-3">
+                            {!step.heading && (
+                              <span className="text-sm font-medium text-white bg-gray-900 px-2 py-1 rounded">
+                                {stepNumber}
+                              </span>
+                            )}
+                            <span className={`text-sm ${step.heading ? 'font-semibold text-lg text-gray-800' : 'text-gray-600'}`}>
+                              {step.content.substring(0, 50)}...
+                            </span>
+                          </div>
+                          
+                          {/* 小見出しの場合は画像アップロード欄を非表示 */}
+                          {!step.heading && (
+                            <>
+                              {/* 画像アップロード */}
+                              <div className="mb-3">
+                                <label className="block text-sm font-medium text-gray-700 mb-2">
+                                  画像をアップロード
+                                </label>
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                      console.log(`🔵 ファイル選択: ステップ${index} (stepNumber: ${stepNumber}, stepId: ${step.id})`, file);
+                                      if (step.id) {
+                                        handleImageUpload(file, step.id);
+                                      } else {
+                                        console.error('ステップIDが存在しません:', step);
+                                        setError('ステップIDが存在しません。手順を保存してから画像をアップロードしてください。');
+                                      }
+                                    }
+                                  }}
+                                  className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+                                />
+                              </div>
+
+                              {/* アップロード済み画像 */}
+                              {images.length > 0 && (
+                                <div className="space-y-2">
+                                  <p className="text-sm font-medium text-gray-700">アップロード済み画像:</p>
+                                  <div className="grid grid-cols-2 gap-2">
+                                    {images.map((image) => (
+                                      <div key={image.id} className="relative">
+                                        <img
+                                          src={image.image_url}
+                                          alt={image.file_name}
+                                          className="w-full h-24 object-cover rounded border"
+                                        />
+                                        <button
+                                          onClick={() => {
+                                            if (step.id) {
+                                              handleImageDelete(image.id, step.id);
+                                            } else {
+                                              console.error('ステップIDが存在しません:', step);
+                                              setError('ステップIDが存在しません。');
+                                            }
+                                          }}
+                                          className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600"
+                                        >
+                                          <X className="w-3 h-3" />
+                                        </button>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+
+              {/* 下部の2列レイアウト */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                {/* 左列：ソフトウェア情報 */}
+                <div className="bg-white rounded-lg shadow-md p-6 border border-gray-300">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">使用ソフトウェア情報</h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        使用ソフトウェア
+                      </label>
+                      <Input
+                        value={software}
+                        onChange={(e) => setSoftware(e.target.value)}
+                        placeholder="例: Photoshop, Illustrator"
                         className="w-full"
                       />
                     </div>
-                  ))}
-                </div>
-
-                <div className="mt-6 space-y-3">
-                  <Button
-                    onClick={handleTemporarySave}
-                    disabled={saving || completing || newSteps.every(step => !step.content.trim())}
-                    variant="outline"
-                    className="w-full flex items-center gap-2"
-                  >
-                    {saving ? (
-                      <Loader2 className="w-4 h-4 animate-spin" />
-                    ) : (
-                      <Save className="w-4 h-4" />
-                    )}
-                    一時保存
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {/* 右列：画像アップロード */}
-            <div className={`bg-white rounded-lg shadow-md p-6 border border-gray-300 ${!showStepEditing ? 'lg:col-span-2' : ''}`}>
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">手順別画像登録</h3>
-                <Button
-                  onClick={() => setShowStepEditing(!showStepEditing)}
-                  variant="outline"
-                  size="sm"
-                  className="flex items-center gap-2"
-                >
-                  {showStepEditing ? '手順編集を閉じる' : '手順編集'}
-                </Button>
-              </div>
-              <div className="space-y-6 max-h-96 overflow-y-auto">
-                {newSteps.map((step, index) => {
-                  // マッピングから正しいstep_numberを取得（UIの手順番号を1から開始）
-                  const stepNumber = stepNumberMapping.get(index + 1) || (index + 1);
-                  
-                  console.log(`🔵 ステップ${index}の詳細:`, {
-                    content: step.content,
-                    heading: step.heading,
-                    mappedStepNumber: stepNumberMapping.get(index),
-                    fallbackStepNumber: index + 1,
-                    finalStepNumber: stepNumber,
-                    stepNumberMapping: Array.from(stepNumberMapping.entries())
-                  });
-                  
-                  const images = step.id ? (stepImages[step.id] || []) : [];
-                  
-                  console.log(`🔵 ステップ${index}の画像検索結果:`, {
-                    stepNumber,
-                    images,
-                    allStepImages: stepImages
-                  });
-
-                  return (
-                    <div key={step.id} className={`${step.heading ? '' : 'border rounded-lg'} p-4`}>
-                      <div className="flex items-center gap-2 mb-3">
-                        {!step.heading && (
-                          <span className="text-sm font-medium text-white bg-gray-900 px-2 py-1 rounded">
-                            {stepNumber}
-                          </span>
-                        )}
-                        <span className={`text-sm ${step.heading ? 'font-semibold text-lg text-gray-800' : 'text-gray-600'}`}>
-                          {step.content.substring(0, 50)}...
-                        </span>
-                      </div>
-                      
-                      {/* 小見出しの場合は画像アップロード欄を非表示 */}
-                      {!step.heading && (
-                        <>
-                          {/* 画像アップロード */}
-                          <div className="mb-3">
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                              画像をアップロード
-                            </label>
-                            <input
-                              type="file"
-                              accept="image/*"
-                              onChange={(e) => {
-                                const file = e.target.files?.[0];
-                                if (file) {
-                                  console.log(`🔵 ファイル選択: ステップ${index} (stepNumber: ${stepNumber}, stepId: ${step.id})`, file);
-                                  if (step.id) {
-                                    handleImageUpload(file, step.id);
-                                  } else {
-                                    console.error('ステップIDが存在しません:', step);
-                                    setError('ステップIDが存在しません。手順を保存してから画像をアップロードしてください。');
-                                  }
-                                }
-                              }}
-                              className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                            />
-                          </div>
-
-                          {/* アップロード済み画像 */}
-                          {images.length > 0 && (
-                            <div className="space-y-2">
-                              <p className="text-sm font-medium text-gray-700">アップロード済み画像:</p>
-                              <div className="grid grid-cols-2 gap-2">
-                                {images.map((image) => (
-                                  <div key={image.id} className="relative">
-                                    <img
-                                      src={image.image_url}
-                                      alt={image.file_name}
-                                      className="w-full h-24 object-cover rounded border"
-                                    />
-                                    <button
-                                      onClick={() => {
-                                        if (step.id) {
-                                          handleImageDelete(image.id, step.id);
-                                        } else {
-                                          console.error('ステップIDが存在しません:', step);
-                                          setError('ステップIDが存在しません。');
-                                        }
-                                      }}
-                                      className="absolute top-1 right-1 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center hover:bg-red-600"
-                                    >
-                                      <X className="w-3 h-3" />
-                                    </button>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          )}
-                        </>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-
-          {/* 下部の2列レイアウト */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {/* 左列：ソフトウェア情報 */}
-            <div className="bg-white rounded-lg shadow-md p-6 border border-gray-300">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4">使用ソフトウェア情報</h3>
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    使用ソフトウェア
-                  </label>
-                  <Input
-                    value={software}
-                    onChange={(e) => setSoftware(e.target.value)}
-                    placeholder="例: Photoshop, Illustrator"
-                    className="w-full"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    バージョン
-                  </label>
-                  <Input
-                    value={version}
-                    onChange={(e) => setVersion(e.target.value)}
-                    placeholder="例: 2024, CC 2024"
-                    className="w-full"
-                  />
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        バージョン
+                      </label>
+                      <Input
+                        value={version}
+                        onChange={(e) => setVersion(e.target.value)}
+                        placeholder="例: 2024, CC 2024"
+                        className="w-full"
+                      />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -1177,10 +1164,10 @@ export default function ImagesEditPage() {
               )}
             </Button>
           </div>
-            </>
-          )}
-        </div>
-      </div>
+        </>
+      )}
     </div>
-  );
+  </div>
+</div>
+);
 } 
