@@ -250,15 +250,6 @@ export default function ImagesEditPage() {
           }
         });
         
-        // 完了状態の場合は、手順番号マッピングを優先的に設定
-        if (material && material.image_registration === 'completed') {
-          console.log('🔵 完了状態: 手順番号マッピングを優先的に設定');
-          setStepNumberMapping(mapping);
-        } else {
-          setStepNumberMapping(mapping);
-        }
-        console.log('🔵 最終的な手順番号マッピング:', Object.fromEntries(mapping));
-        
         // 完了状態から再編集時は、手順番号マッピングを再構築
         if (material && material.image_registration === 'completed') {
           console.log('🔵 完了状態から再編集のため、手順番号マッピングを再構築');
@@ -284,7 +275,19 @@ export default function ImagesEditPage() {
             // フォールバック: 元のマッピングを使用
             setStepNumberMapping(mapping);
           }
+        } else {
+          // 通常の場合は、基本のマッピングを設定
+          setStepNumberMapping(mapping);
+          console.log('🔵 通常状態用の手順番号マッピング:', Object.fromEntries(mapping));
         }
+        
+        // 最終的な手順番号マッピングをログ出力
+        console.log('🔵 最終的な手順番号マッピング:', Object.fromEntries(stepNumberMapping));
+        
+        // 手順番号マッピングの状態を確認
+        setTimeout(() => {
+          console.log('🔵 遅延後の手順番号マッピング:', Object.fromEntries(stepNumberMapping));
+        }, 100);
         
         // 各手順の画像を取得
         console.log('🔵 各手順の画像を取得中...');
@@ -1134,21 +1137,46 @@ export default function ImagesEditPage() {
                       // マッピングから正しいstep_numberを取得（UIの手順番号を1から開始）
                       let stepNumber = stepNumberMapping.get(index + 1);
                       
+                      console.log(`🔍 ステップ${index}の手順番号マッピング確認:`, {
+                        uiIndex: index + 1,
+                        mappedValue: stepNumberMapping.get(index + 1),
+                        stepNumberBeforeFallback: stepNumber,
+                        stepNumberMappingSize: stepNumberMapping.size,
+                        stepNumberMappingEntries: Array.from(stepNumberMapping.entries())
+                      });
+                      
                       // 手順番号マッピングが正しく設定されていない場合のフォールバック
                       if (stepNumber === undefined || stepNumber === null) {
+                        console.log(`⚠️ ステップ${index}でマッピングが見つからないため、フォールバック処理を実行`);
                         // 完了状態の場合は、データベースのstep_numberを直接使用
                         if (material && material.image_registration === 'completed' && step.id) {
                           // 既存の手順データからstep_numberを取得
                           const existingStep = steps.find(s => s.id === step.id);
                           if (existingStep && existingStep.step_number < 9999) {
                             stepNumber = existingStep.step_number;
+                            console.log(`✅ フォールバック: 既存手順からstep_number ${stepNumber} を取得`);
                           } else {
                             stepNumber = index + 1; // フォールバック
+                            console.log(`⚠️ フォールバック: インデックスベース ${stepNumber} を使用`);
                           }
                         } else {
                           stepNumber = index + 1; // フォールバック
+                          console.log(`⚠️ フォールバック: インデックスベース ${stepNumber} を使用`);
                         }
+                      } else {
+                        console.log(`✅ ステップ${index}: マッピングから手順番号 ${stepNumber} を取得`);
                       }
+                      
+                      // 手順番号マッピングの状態を詳細にログ出力
+                      console.log(`🔍 ステップ${index}の詳細な手順番号マッピング確認:`, {
+                        uiIndex: index + 1,
+                        mappedValue: stepNumberMapping.get(index + 1),
+                        stepNumberBeforeFallback: stepNumber,
+                        stepNumberMappingSize: stepNumberMapping.size,
+                        stepNumberMappingEntries: Array.from(stepNumberMapping.entries()),
+                        stepNumberMappingKeys: Array.from(stepNumberMapping.keys()),
+                        stepNumberMappingValues: Array.from(stepNumberMapping.values())
+                      });
                       
                       console.log(`🔵 ステップ${index}の詳細:`, {
                         content: step.content,
